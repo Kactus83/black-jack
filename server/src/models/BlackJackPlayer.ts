@@ -12,8 +12,10 @@ export class BlackJackPlayer extends Player {
   // État de la partie
   public isBusted: boolean = false;
   public hasStood: boolean = false;
-  public chips: number = 100;  // Solde du joueur
-  public bet: number = 0;      // Mise actuelle du joueur
+
+  // Système de mise
+  public chips: number = 100; // capital
+  public bet: number = 0;     // mise courante
 
   constructor(nickname: string) {
     super(nickname);

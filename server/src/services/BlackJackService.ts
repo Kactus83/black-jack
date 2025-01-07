@@ -1,3 +1,4 @@
+import { Server } from 'socket.io';
 import GameRoomManager from './GameRoomManager';
 import { BlackJackGame } from '../models/BlackJackGame';
 import { BlackJackPlayer } from '../models/BlackJackPlayer';
@@ -7,6 +8,16 @@ import { BlackJackPlayer } from '../models/BlackJackPlayer';
  */
 class BlackJackService {
   private static games: Map<string, BlackJackGame> = new Map();
+
+  // Ajout pour émettre des events depuis le service
+  private static io: Server | null = null;
+
+  /**
+   * Initialise le service avec la référence Socket.IO
+   */
+  public static init(ioInstance: Server) {
+    BlackJackService.io = ioInstance;
+  }
 
   public static startGame(roomId: string): { success: boolean; error?: string } {
     const room = GameRoomManager.getInstance().getRoom(roomId);
@@ -38,6 +49,7 @@ class BlackJackService {
 
     const card = game.drawCardForPlayer(playerId);
     if (!card) {
+      // => Soit plus de cartes, soit c'est pas son tour, ou isGameOver
       return { success: false, error: 'Cannot draw card at this moment' };
     }
 
@@ -89,16 +101,10 @@ class BlackJackService {
       console.log(`[BlackJackService] Relance de la partie pour la room: ${roomId}`);
       BlackJackService.startGame(roomId);
 
-      // Après avoir relancé, on peut diffuser l'état initial
+      // Après avoir relancé, on diffuse l'état
       const stateResult = BlackJackService.getGameState(roomId);
-      if (stateResult.success && stateResult.state) {
-        // On utilise Socket.IO pour envoyer l'update
-        // => Besoin d'accès au io (serveur)? Soit on l'importe, soit on émet un event global
-        // Approach : On émet un event custom 'newGameStarted' si on veut
-        // Sinon, le front fera un 'requestGameState' en boucle.
-
-        // [Optionnel] Emettre un event 'updateGameState'
-        // (La relance auto par le backend est un peu tricky sans un handle direct au io.)
+      if (stateResult.success && stateResult.state && BlackJackService.io) {
+        BlackJackService.io.to(roomId).emit('updateGameState', { state: stateResult.state });
       }
     }, 5000);
   }

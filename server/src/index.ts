@@ -26,7 +26,6 @@ app.use(express.json());
  */
 function getLocalIPv4Address(): string | null {
   const networkInterfaces = os.networkInterfaces();
-
   for (const ifaceName of Object.keys(networkInterfaces)) {
     const iface = networkInterfaces[ifaceName];
     if (!iface) continue;
@@ -73,10 +72,46 @@ app.get('/api/server-info', (req: Request, res: Response): void => {
   }
 });
 
-// Endpoint racine
-app.get('/', (req, res) => {
-  res.send('Hello from server!');
+
+
+/**
+ * Route pour obtenir la liste des parties actives (rooms) :
+ *  - roomId
+ *  - playersCount
+ *  - liste de pseudos
+ */
+app.get('/api/active-games', (req, res) => {
+  try {
+    const manager = GameRoomManager.getInstance();
+    const allRoomIds = manager.getAllRooms();
+
+    const roomsData = allRoomIds.map((roomId) => {
+      const room = manager.getRoom(roomId);
+      if (!room) {
+        return null; // ou on filtre
+      }
+      return {
+        roomId,
+        playersCount: room.players.length,
+        players: room.players.map((p) => ({
+          id: p.id,
+          nickname: p.nickname,
+        })),
+      };
+    }).filter(Boolean); // enlever les null s’il y en a
+
+    return res.json({
+      success: true,
+      rooms: roomsData,
+    });
+  } catch (error: any) {
+    console.error('[GET /api/active-games] Erreur :', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
+
+// Initialiser le service avec la référence Socket.IO
+BlackJackService.init(io);
 
 io.on('connection', (socket) => {
   console.log('New client connected:', socket.id);
@@ -127,7 +162,7 @@ io.on('connection', (socket) => {
         io.to(roomId).emit('roomUpdated', { players: room.players });
       }
 
-      // Renvoyer le nouveau joueurId pour le front
+      // Renvoyer le nouveau playerId pour le front
       callback({ success: true, playerId: result.player?.id });
     } catch (err: any) {
       callback({ success: false, error: err.message });
@@ -193,7 +228,13 @@ io.on('connection', (socket) => {
       callback({ success: false, error: result.error });
       return;
     }
-    io.to(roomId).emit('updateGameState', { state: BlackJackService.getGameState(roomId).state });
+
+    // Notifier l'état
+    const stateResult = BlackJackService.getGameState(roomId);
+    if (stateResult.success && stateResult.state) {
+      io.to(roomId).emit('updateGameState', { state: stateResult.state });
+    }
+
     callback({ success: true });
   });
 
@@ -205,7 +246,12 @@ io.on('connection', (socket) => {
       callback({ success: false, error: result.error });
       return;
     }
-    io.to(roomId).emit('updateGameState', { state: BlackJackService.getGameState(roomId).state });
+
+    // Notifier l'état
+    const stateResult = BlackJackService.getGameState(roomId);
+    if (stateResult.success && stateResult.state) {
+      io.to(roomId).emit('updateGameState', { state: stateResult.state });
+    }
     callback({ success: true });
   });
 

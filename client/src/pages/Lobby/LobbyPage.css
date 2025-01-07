@@ -149,3 +149,12 @@
     }
   }
   
+
+  .active-game-card {
+    border: 1px solid #ccc;
+    background: #fff;
+    color: #000;
+    padding: 8px;
+    border-radius: 4px;
+    margin-top: 5px;
+  }

@@ -3,6 +3,11 @@ import { Player } from './Player';
 import { BlackJackPlayer } from './BlackJackPlayer';
 import { Card } from './Card';
 
+/**
+ * Classe BlackJackGame, représentant une partie de Blackjack.
+ * Elle contient un Deck, la liste des BlackJackPlayers,
+ * et des méthodes pour initialiser et décrire l'état de la partie.
+ */
 export class BlackJackGame {
   private deck: Deck;
   private players: BlackJackPlayer[];
@@ -32,7 +37,7 @@ export class BlackJackGame {
 
     this.deck.shuffle();
 
-    // >>> AJOUT : placer la mise avant de distribuer
+    // Place la mise basique (exemple)
     this.placeBets();
 
     this.players.forEach((bjPlayer) => {
@@ -50,27 +55,31 @@ export class BlackJackGame {
   }
 
   /**
-   * Place la mise basique pour tous les joueurs (par ex. 10).
-   * Retire la mise de leur solde.
+   * Exemple simple : mise fixe de 10, si un joueur n'a pas assez, il mise tout
    */
   private placeBets(): void {
-    const betAmount = 10;  // Montant fixe pour l'exemple
+    const betAmount = 10;
     for (const player of this.players) {
       if (player.chips >= betAmount) {
         player.bet = betAmount;
         player.chips -= betAmount;
       } else {
-        // S'il n'a pas assez pour miser => mise = tout
         player.bet = player.chips;
         player.chips = 0;
       }
     }
   }
 
+  /**
+   * Retourne la liste des joueurs (BlackJackPlayers).
+   */
   public getPlayers(): BlackJackPlayer[] {
     return this.players;
   }
 
+  /**
+   * Méthode interne pour renvoyer l'état (exploitable par le front) de chaque joueur.
+   */
   public getStateForFront() {
     return this.players.map((bjPlayer, index) => ({
       id: bjPlayer.id,
@@ -84,11 +93,16 @@ export class BlackJackGame {
       hasStood: bjPlayer.hasStood,
       isCurrent: index === this.currentPlayerIndex,
       isGameOver: this.isGameOver,
+
+      // Ajout pour afficher l'argent et la mise
       chips: bjPlayer.chips,
       bet: bjPlayer.bet,
     }));
   }
 
+  /**
+   * Le joueur tire une carte (Hit).
+   */
   public drawCardForPlayer(playerId: string): Card | null {
     if (this.isGameOver) return null;
 
@@ -109,6 +123,9 @@ export class BlackJackGame {
     return card || null;
   }
 
+  /**
+   * Passe au joueur suivant (Stand).
+   */
   public nextPlayer(playerId: string): void {
     if (this.isGameOver) return;
     const currentPlayer = this.players[this.currentPlayerIndex];
@@ -129,7 +146,7 @@ export class BlackJackGame {
 
       if (this.allPlayersDone()) {
         this.isGameOver = true;
-        this.distributeWinnings(); 
+        this.distributeWinnings();
         break;
       }
     }
@@ -145,28 +162,21 @@ export class BlackJackGame {
   }
 
   /**
-   * Distribue les gains aux joueurs qui ont <=21.
-   * Exemple simple : on partage le pot entre les joueurs non bust,
-   * ou si tous bust => croupier (pas implémenté), etc.
+   * Distribue les gains aux joueurs qui ont <= 21, partage simple du pot
    */
   private distributeWinnings(): void {
     const winners = this.checkWinners();
     if (winners.length === 0) {
-      // Personne ne gagne => pot perdu ?
-      return;
+      return; // Personne ne gagne => pot perdu
     }
-
-    // Somme totale des bets
     const totalBet = this.players.reduce((acc, p) => acc + p.bet, 0);
-    // On partage de façon égale entre tous les winners
     const share = Math.floor(totalBet / winners.length);
-
     for (const w of winners) {
       w.chips += share;
     }
   }
 
-  public checkWinners(): BlackJackPlayer[] {
+  public checkWinners() {
     return this.players.filter((p) => p.getScore() <= 21);
   }
 

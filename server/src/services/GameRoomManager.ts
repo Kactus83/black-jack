@@ -50,6 +50,14 @@ class GameRoomManager {
   public getRoom(roomId: string): GameRoom | undefined {
     return this.rooms.get(roomId);
   }
+
+
+  /**
+   * Retourne la liste de toutes les rooms actives (IDs).
+   */
+  public getAllRooms(): string[] {
+    return [...this.rooms.keys()];
+  }
 }
 
 export default GameRoomManager;
