@@ -1,0 +1,14 @@
+services:
+  server:
+    build: ./server
+    container_name: blackjack-server
+    ports:
+      - "3001:3001"
+
+  client:
+    build: ./client
+    container_name: blackjack-client
+    ports:
+      - "3000:3000"
+    depends_on:
+      - server
