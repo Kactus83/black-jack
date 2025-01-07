@@ -1,25 +1,51 @@
 @echo off
 setlocal enabledelayedexpansion
 
-:: Détecter l'adresse IP locale
-echo [Startup] Détection de l'adresse IP locale...
+echo [Startup] Detecting active IPv4 addresses on LAN...
 
-for /f "tokens=3" %%a in ('route print ^| findstr "0.0.0.0"') do (
-    set SERVER_IP=%%a
-    goto :found
+:: Variable to store the list of server URLs
+set SERVER_URL_LIST=
+
+:: Search for lines containing "IPv4 Address"
+for /f "tokens=2 delims=:" %%A in ('ipconfig ^| findstr /C:"Adresse IPv4"') do (
+    set IP_TMP=%%A
+    :: Remove extra spaces
+    set IP_TMP=!IP_TMP: =!
+    :: Check if it starts with 192., 10., or 172.1
+    if "!IP_TMP:~0,4!"=="192." (
+        if defined SERVER_URL_LIST (
+            set SERVER_URL_LIST=!SERVER_URL_LIST!,http://!IP_TMP!:3001
+        ) else (
+            set SERVER_URL_LIST=http://!IP_TMP!:3001
+        )
+    ) else if "!IP_TMP:~0,3!"=="10." (
+        if defined SERVER_URL_LIST (
+            set SERVER_URL_LIST=!SERVER_URL_LIST!,http://!IP_TMP!:3001
+        ) else (
+            set SERVER_URL_LIST=http://!IP_TMP!:3001
+        )
+    ) else if "!IP_TMP:~0,5!"=="172.1" (
+        if defined SERVER_URL_LIST (
+            set SERVER_URL_LIST=!SERVER_URL_LIST!,http://!IP_TMP!:3001
+        ) else (
+            set SERVER_URL_LIST=http://!IP_TMP!:3001
+        )
+    )
 )
 
-:found
-if not defined SERVER_IP (
-    echo [Error] Impossible de détecter l'adresse IP locale. Utilisation de 'localhost' par défaut.
-    set SERVER_IP=localhost
+if not defined SERVER_URL_LIST (
+    echo [Error] No valid LAN IP address found. Cannot continue...
+    echo [Error] Check your Wi-Fi or Ethernet is in 192.x, 10.x, or 172.16.x range.
+    pause
+    endlocal
+    exit /b 1
 ) else (
-    echo [Startup] Adresse IP détectée : %SERVER_IP%
+    echo [Startup] LAN IP addresses detected: %SERVER_URL_LIST%
 )
 
-:: Lancer Docker Compose avec l'adresse IP comme variable d'environnement
-echo [Startup] Lancement de Docker Compose avec SERVER_URL=http://%SERVER_IP%:3001
-set SERVER_URL=http://%SERVER_IP%:3001
+:: Launch Docker Compose with the list of addresses
+echo [Startup] Starting Docker Compose with SERVER_URL_LIST=%SERVER_URL_LIST%
+set SERVER_URL_LIST=%SERVER_URL_LIST%
 docker-compose up --build
 
 endlocal

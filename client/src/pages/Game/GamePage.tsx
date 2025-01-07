@@ -10,15 +10,30 @@ import {
 } from '../../types/blackjack';
 import './GamePage.css';
 
+/**
+ * Page principale de l'interface du jeu de BlackJack.
+ * - Gère la connexion Socket.IO pour l'état du jeu.
+ * - Affiche la liste des joueurs avant le lancement.
+ * - Affiche les cartes (sous forme textuelle stylée) et le score pour chaque joueur.
+ * - Propose des actions "Tirer" (Hit) et "Rester" (Stand).
+ */
 const GamePage: React.FC = () => {
   const { roomId } = useParams();
 
-  // État pour les joueurs avant le début de la partie
+  // Liste des joueurs avant le lancement
   const [players, setPlayers] = useState<Player[]>([]);
   const [gameStarted, setGameStarted] = useState<boolean>(false);
+
+  // État du jeu (cartes, score) une fois la partie lancée
   const [blackJackPlayers, setBlackJackPlayers] = useState<BlackJackPlayerState[]>([]);
+
+  // Adresse IP locale pour affichage / connexion LAN
   const [localIP, setLocalIP] = useState<string | null>(null);
 
+  /**
+   * useEffect : Initialise la connexion socket,
+   * écoute les événements clés ("roomUpdated", "gameStarted", "updateGameState").
+   */
   useEffect(() => {
     let socket: Awaited<ReturnType<typeof initializeSocket>>;
 
@@ -57,7 +72,7 @@ const GamePage: React.FC = () => {
   }, []);
 
   /**
-   * Récupère l'adresse IP locale pour affichage
+   * Récupère l'adresse IP locale pour l'afficher.
    */
   const fetchLocalIP = async () => {
     try {
@@ -74,7 +89,7 @@ const GamePage: React.FC = () => {
   };
 
   /**
-   * Démarre la partie
+   * Démarre la partie : envoie 'startGame' via Socket.IO.
    */
   const handleStartGame = async () => {
     if (!roomId) return;
@@ -87,7 +102,7 @@ const GamePage: React.FC = () => {
   };
 
   /**
-   * Actions de jeu : Hit ou Stand
+   * Actions de jeu : Tirer (Hit) ou Rester (Stand).
    */
   const handlePlayerAction = async (action: 'hit' | 'stand') => {
     if (!roomId) return;
@@ -103,36 +118,84 @@ const GamePage: React.FC = () => {
     );
   };
 
+  /**
+   * Retour visuel principal
+   */
   return (
     <div className="game-container">
-      <h1>BlackJack - Salle {roomId}</h1>
+      <h1>BlackJack - Room {roomId}</h1>
 
+      {/* Section avant le lancement */}
       {!gameStarted && (
         <div className="pre-game">
-          <h2>En attente du lancement...</h2>
+          <h2>Waiting to start...</h2>
           <ul className="players-list">
             {players.map((player) => (
               <li key={player.id}>{player.nickname}</li>
             ))}
           </ul>
           <button className="btn-primary" onClick={handleStartGame}>
-            Démarrer la Partie
+            Start Game
           </button>
-          {localIP && <p>Connectez-vous via : {localIP}:3000</p>}
+          {localIP && (
+            <p className="local-ip-info">
+              LAN Access: <strong>{localIP}:3000</strong>
+            </p>
+          )}
         </div>
       )}
 
+      {/* Section en cours de jeu */}
       {gameStarted && (
         <div className="game-board">
           {blackJackPlayers.map((player) => (
-            <div key={player.id}>{player.nickname} - Score: {player.score}</div>
+            <div key={player.id} className="player-card">
+              <h3>{player.nickname}</h3>
+              <div className="hand">
+                {player.hand.map((card, index) => (
+                  <div key={index} className="card">
+                    {/* Affichage textuel, par ex. "A ♣" ou "10 ♥" */}
+                    {card.rank} {renderSuitSymbol(card.suit)}
+                  </div>
+                ))}
+              </div>
+              <p className="score">Score: {player.score}</p>
+            </div>
           ))}
-          <button onClick={() => handlePlayerAction('hit')}>Tirer</button>
-          <button onClick={() => handlePlayerAction('stand')}>Rester</button>
+        </div>
+      )}
+
+      {/* Section pour les boutons d'action si la partie est lancée */}
+      {gameStarted && (
+        <div className="player-actions">
+          <button className="btn-action" onClick={() => handlePlayerAction('hit')}>
+            Tirer (Hit)
+          </button>
+          <button className="btn-action" onClick={() => handlePlayerAction('stand')}>
+            Rester (Stand)
+          </button>
         </div>
       )}
     </div>
   );
 };
+
+/**
+ * Fonction utilitaire pour afficher le symbole de la couleur (suit).
+ */
+function renderSuitSymbol(suit: string): string {
+  switch (suit) {
+    case 'HEARTS':
+      return '♥';
+    case 'DIAMONDS':
+      return '♦';
+    case 'CLUBS':
+      return '♣';
+    case 'SPADES':
+      return '♠';
+    default:
+      return '';
+  }
+}
 
 export default GamePage;

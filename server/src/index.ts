@@ -215,7 +215,7 @@ io.on('connection', (socket) => {
 });
 
 // Lancement du serveur
-const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => {
+const PORT = Number(process.env.PORT) || 3001;
+server.listen(PORT, '0.0.0.0', () => { // '0.0.0.0' permet d'écouter sur toutes les interfaces réseau
   console.log(`Server running on port ${PORT}`);
 });

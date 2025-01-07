@@ -1,17 +1,29 @@
 #!/bin/bash
 
-# Récupérer l'IP du réseau Wi-Fi (ou adapter selon votre configuration)
-echo "[Startup] Détection de l'adresse IP locale..."
+echo "[Startup] Detecting all local IPv4 addresses..."
 
-SERVER_IP=$(ip route get 8.8.8.8 | awk '{print $7; exit}')
+# Retrieve all IPv4 addresses that match 192. or 10. or 172.1
+SERVER_URL_LIST=""
 
-if [ -z "$SERVER_IP" ]; then
-  echo "[Error] Impossible de détecter l'adresse IP locale. Utilisation de 'localhost' par défaut."
-  SERVER_IP="localhost"
+# `hostname -I` returns all IPs, space-separated. We'll parse them.
+for ip in $(hostname -I); do
+  # Check if IP starts with 192., 10. or 172.1
+  if [[ "$ip" == 192.* || "$ip" == 10.* || "$ip" == 172.1* ]]; then
+    if [ -z "$SERVER_URL_LIST" ]; then
+      SERVER_URL_LIST="http://$ip:3001"
+    else
+      SERVER_URL_LIST="$SERVER_URL_LIST,http://$ip:3001"
+    fi
+  fi
+done
+
+if [ -z "$SERVER_URL_LIST" ]; then
+  echo "[Error] No valid LAN IP found (192.x, 10.x, 172.1). Cannot continue."
+  echo "[Error] Check Wi-Fi or Ethernet."
+  exit 1
 else
-  echo "[Startup] Adresse IP détectée : $SERVER_IP"
+  echo "[Startup] LAN IP addresses detected: $SERVER_URL_LIST"
 fi
 
-# Lancer Docker Compose avec l'adresse IP comme variable d'environnement
-echo "[Startup] Lancement de Docker Compose avec SERVER_URL=http://$SERVER_IP:3001"
-SERVER_URL="http://$SERVER_IP:3001" docker-compose up --build
+echo "[Startup] Starting Docker Compose with SERVER_URL_LIST=$SERVER_URL_LIST"
+SERVER_URL_LIST="$SERVER_URL_LIST" docker-compose up --build
