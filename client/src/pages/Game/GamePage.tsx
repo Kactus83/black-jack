@@ -106,10 +106,18 @@ const GamePage: React.FC = () => {
    */
   const handlePlayerAction = async (action: 'hit' | 'stand') => {
     if (!roomId) return;
+
+    // >>> Ajout : récupérer le playerId stocké lors du createGame/joinGame
+    const playerId = localStorage.getItem('playerId');
+    if (!playerId) {
+      console.error('Aucun playerId trouvé dans localStorage. Vérifiez la création ou la jonction de partie.');
+      return;
+    }
+
     const socket = await initializeSocket();
     socket.emit(
       action === 'hit' ? 'playerHit' : 'playerStand',
-      { roomId, playerId: 'votre-id-joueur' },
+      { roomId, playerId },
       (response: { success: boolean; error?: string }) => {
         if (!response.success) {
           console.error(response.error);

@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import http from 'http';
-import os from 'os'; 
+import os from 'os';
 import { Server } from 'socket.io';
 import GameRoomManager from './services/GameRoomManager';
 import BlackJackService from './services/BlackJackService';
@@ -14,10 +14,10 @@ import BlackJackService from './services/BlackJackService';
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: '*' }
+  cors: { origin: '*' },
 });
 
-// Parser le JSON 
+// Parser le JSON
 app.use(express.json());
 
 /**
@@ -45,7 +45,7 @@ function getLocalIPv4Address(): string | null {
  * Endpoint permettant de récupérer quelques informations sur le serveur,
  * notamment l'adresse IP locale, pour un usage en LAN.
  */
-app.get('/api/server-info', (req: express.Request, res: express.Response): void => {
+app.get('/api/server-info', (req: Request, res: Response): void => {
   console.log('[API] Requête reçue sur /api/server-info');
   try {
     const localIP = getLocalIPv4Address();
@@ -65,10 +65,10 @@ app.get('/api/server-info', (req: express.Request, res: express.Response): void 
       localIP,
     });
   } catch (error: any) {
-    console.error('Erreur lors de la récupération de l\'IP locale :', error.message);
+    console.error("Erreur lors de la récupération de l'IP locale :", error.message);
     res.status(500).json({
       success: false,
-      message: 'Une erreur est survenue lors de la récupération de l\'IP locale',
+      message: "Une erreur est survenue lors de la récupération de l'IP locale",
     });
   }
 });
@@ -89,7 +89,8 @@ io.on('connection', (socket) => {
         callback({ success: false, error: 'Nickname is required' });
         return;
       }
-      const { roomId } = GameRoomManager.getInstance().createRoom(nickname);
+      // On récupère roomId et player
+      const { roomId, player } = GameRoomManager.getInstance().createRoom(nickname);
 
       socket.join(roomId);
 
@@ -98,7 +99,8 @@ io.on('connection', (socket) => {
         io.to(roomId).emit('roomUpdated', { players: room.players });
       }
 
-      callback({ success: true, roomId });
+      // Renvoyer le playerId pour que le client sache qui il est
+      callback({ success: true, roomId, playerId: player.id });
     } catch (err: any) {
       callback({ success: false, error: err.message });
     }
@@ -125,7 +127,8 @@ io.on('connection', (socket) => {
         io.to(roomId).emit('roomUpdated', { players: room.players });
       }
 
-      callback({ success: true });
+      // Renvoyer le nouveau joueurId pour le front
+      callback({ success: true, playerId: result.player?.id });
     } catch (err: any) {
       callback({ success: false, error: err.message });
     }
@@ -206,16 +209,14 @@ io.on('connection', (socket) => {
     callback({ success: true });
   });
 
-
   // DISCONNECT
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
-    // => Vous pouvez gérer la suppression du joueur dans la room si nécessaire.
   });
 });
 
 // Lancement du serveur
 const PORT = Number(process.env.PORT) || 3001;
-server.listen(PORT, '0.0.0.0', () => { // '0.0.0.0' permet d'écouter sur toutes les interfaces réseau
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });

@@ -3,37 +3,25 @@ import { Player } from './Player';
 import { BlackJackPlayer } from './BlackJackPlayer';
 import { Card } from './Card';
 
-/**
- * Classe BlackJackGame, représentant une partie de Blackjack.
- * Elle contient un Deck, la liste des BlackJackPlayers,
- * et des méthodes pour initialiser et décrire l'état de la partie.
- */
 export class BlackJackGame {
   private deck: Deck;
   private players: BlackJackPlayer[];
-
+  private currentPlayerIndex: number; 
   constructor() {
     this.deck = new Deck();
     this.players = [];
+    this.currentPlayerIndex = 0;
   }
 
-  /**
-   * Initialise la partie en transformant chaque Player 
-   * en BlackJackPlayer, puis en leur distribuant 2 cartes.
-   */
   public initGame(basePlayers: Player[]): void {
-
-    // On vide la liste existante (si une partie précédente existait)
     this.players = [];
 
-    // Transformer chaque Player en BlackJackPlayer
     for (const p of basePlayers) {
       const bjPlayer = new BlackJackPlayer(p.nickname);
-      bjPlayer.id = p.id; 
+      bjPlayer.id = p.id;
       this.players.push(bjPlayer);
     }
 
-    // Mélanger le deck et distribuer 2 cartes à chaque joueur
     this.deck.shuffle();
 
     this.players.forEach((bjPlayer) => {
@@ -43,26 +31,17 @@ export class BlackJackGame {
       if (card1) bjPlayer.addCard(card1);
       if (card2) bjPlayer.addCard(card2);
     });
+
+    // On commence au joueur 0
+    this.currentPlayerIndex = 0;
   }
 
-  /**
-   * Retourne un tableau de joueurs (BlackJackPlayers).
-   */
   public getPlayers(): BlackJackPlayer[] {
     return this.players;
   }
 
-  /**
-   * Méthode interne pour renvoyer l'état
-   * (exploitable par le front) de chaque joueur.
-   */
   public getStateForFront() {
-    // Tableau d'objets typés:
-    //  - id
-    //  - nickname
-    //  - hand: tableau de { rank, suit }
-    //  - score
-    return this.players.map((bjPlayer) => ({
+    return this.players.map((bjPlayer, index) => ({
       id: bjPlayer.id,
       nickname: bjPlayer.nickname,
       hand: bjPlayer.hand.map((card) => ({
@@ -70,6 +49,7 @@ export class BlackJackGame {
         suit: card.suit,
       })),
       score: bjPlayer.getScore(),
+      isCurrent: index === this.currentPlayerIndex, // indique si c'est le joueur en cours
     }));
   }
 
@@ -88,17 +68,17 @@ export class BlackJackGame {
   }
 
   /**
-   * Passe au joueur suivant.
+   * Passe au joueur suivant (lors du Stand).
    */
   public nextPlayer(): void {
-    // Implémentation pour passer au joueur suivant
+    if (this.players.length < 2) {
+      // Si un seul joueur, nextPlayer n'a pas trop de sens
+      return;
+    }
+    this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
   }
 
-  /**
-   * Détermine les gagnants de la partie.
-   */
   public checkWinners(): BlackJackPlayer[] {
     return this.players.filter((p) => p.getScore() <= 21);
   }
-
 }

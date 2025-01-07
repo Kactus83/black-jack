@@ -22,8 +22,17 @@ const LobbyPage: React.FC = (): React.ReactElement => {
     socket.emit(
       'createGame',
       { nickname },
-      (response: { success: boolean; roomId?: string; error?: string }) => {
-        if (response.success && response.roomId) {
+      (
+        response: {
+          success: boolean;
+          roomId?: string;
+          error?: string;
+          playerId?: string; // Ajout pour récupérer le playerId
+        }
+      ) => {
+        if (response.success && response.roomId && response.playerId) {
+          // On stocke le playerId localement
+          localStorage.setItem('playerId', response.playerId);
           navigate(`/game/${response.roomId}`);
         } else {
           console.error(response.error);
@@ -46,8 +55,16 @@ const LobbyPage: React.FC = (): React.ReactElement => {
     socket.emit(
       'joinGame',
       { nickname, roomId },
-      (response: { success: boolean; error?: string }) => {
-        if (response.success) {
+      (
+        response: {
+          success: boolean;
+          error?: string;
+          playerId?: string; // Ajout pour récupérer le playerId
+        }
+      ) => {
+        if (response.success && response.playerId) {
+          // On stocke le playerId localement
+          localStorage.setItem('playerId', response.playerId);
           navigate(`/game/${roomId}`);
         } else {
           console.error(response.error);
