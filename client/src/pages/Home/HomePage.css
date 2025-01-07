@@ -1,40 +1,84 @@
+/* Conteneur principal */
 .home-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 20px;
-  }
-  
-  .home-header {
-    margin-bottom: 30px;
-  }
-  
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1e3c72, #2a5298);
+  color: #fff;
+  text-align: center;
+  padding: 20px;
+}
+
+/* En-tête */
+.home-header {
+  margin-bottom: 30px;
+}
+
+.home-header h1 {
+  font-size: 3rem;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  letter-spacing: 2px;
+}
+
+.home-subtitle {
+  font-size: 1.2rem;
+  font-weight: 300;
+  margin-bottom: 20px;
+}
+
+/* Section d'introduction */
+.home-intro {
+  max-width: 600px;
+  margin-bottom: 30px;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+/* Bouton d'action principal */
+.btn-primary {
+  background: #27ae60;
+  color: white;
+  padding: 12px 24px;
+  font-size: 1.1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-transform: uppercase;
+  font-weight: bold;
+  letter-spacing: 1px;
+  transition: background 0.3s ease;
+}
+
+.btn-primary:hover {
+  background: #1e8449;
+}
+
+/* Pied de page */
+.home-footer {
+  margin-top: 40px;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.home-footer p {
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 500px) {
   .home-header h1 {
     font-size: 2rem;
-    text-transform: uppercase;
-    letter-spacing: 2px;
   }
-  
+
   .home-intro {
-    max-width: 600px;
-    text-align: center;
-    margin-bottom: 20px;
+    font-size: 0.9rem;
   }
-  
-  .home-actions {
-    margin-top: 20px;
+
+  .btn-primary {
+    font-size: 1rem;
+    padding: 10px 20px;
   }
-  
-  .btn-lobby {
-    background-color: #4caf50;
-    color: #fff;
-    padding: 12px 24px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  
-  .btn-lobby:hover {
-    background-color: #45a049;
-  }
-  
+}

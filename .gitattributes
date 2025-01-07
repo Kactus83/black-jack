@@ -1,0 +1,11 @@
+# Ajouté pour eviter que git n'ecrase le type de fin de ligne lors des commits
+# Git a tendance a convertir les fin de ligne en fonction du systeme d'exploitation
+
+# Forcer LF pour certains fichiers .sh
+client/entrypoint.sh text eol=lf
+
+# Forcer CRLF pour d'autres fichiers .sh
+# start.sh text eol=crlf
+
+# Conserver le format d'origine pour tous les autres fichiers
+* -text

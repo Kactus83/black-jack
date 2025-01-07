@@ -1,69 +1,63 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
-import socket from '../../services/socket';
+import initializeSocket from '../../services/socket';
 import { Player } from '../../types/player';
 import {
   BlackJackPlayerState,
   GameStartedPayload,
   UpdateGameStatePayload,
 } from '../../types/blackjack';
-
 import './GamePage.css';
 
 const GamePage: React.FC = () => {
   const { roomId } = useParams();
 
-  // Liste simple de joueurs (avant le lancement officiel de la partie)
+  // État pour les joueurs avant le début de la partie
   const [players, setPlayers] = useState<Player[]>([]);
-
-  // Indique si la partie est déjà lancée
   const [gameStarted, setGameStarted] = useState<boolean>(false);
-
-  // État "BlackJack" : mains, scores...
   const [blackJackPlayers, setBlackJackPlayers] = useState<BlackJackPlayerState[]>([]);
-
-  // Adresse IP locale du serveur (pour se connecter en LAN)
   const [localIP, setLocalIP] = useState<string | null>(null);
 
-  // Au premier rendu :
-  //  1) Se connecter au socket si ce n'est pas déjà fait
-  //  2) Écouter les events "roomUpdated", "gameStarted", "updateGameState"
-  //  3) Charger l'IP locale du serveur
   useEffect(() => {
-    if (!socket.connected) {
-      socket.connect();
-    }
+    let socket: Awaited<ReturnType<typeof initializeSocket>>;
 
-    // -- Évènements Socket.IO --
+    const setupSocket = async () => {
+      socket = await initializeSocket();
+      if (!socket.connected) {
+        socket.connect();
+      }
 
-    socket.on('roomUpdated', (data: { players: Player[] }) => {
-      setPlayers(data.players);
-    });
+      socket.on('roomUpdated', (data: { players: Player[] }) => {
+        setPlayers(data.players);
+      });
 
-    socket.on('gameStarted', (payload: GameStartedPayload) => {
-      console.log('Game started:', payload.message);
-      setGameStarted(true);
-    });
+      socket.on('gameStarted', (payload: GameStartedPayload) => {
+        console.log('Game started:', payload.message);
+        setGameStarted(true);
+      });
 
-    socket.on('updateGameState', (payload: UpdateGameStatePayload) => {
-      console.log('updateGameState:', payload.state);
-      setBlackJackPlayers(payload.state);
-    });
+      socket.on('updateGameState', (payload: UpdateGameStatePayload) => {
+        console.log('updateGameState:', payload.state);
+        setBlackJackPlayers(payload.state);
+      });
 
-    // Charger l'IP locale du serveur via l'endpoint /api/server-info
-    fetchLocalIP();
+      fetchLocalIP();
+    };
+
+    setupSocket();
 
     return () => {
-      socket.off('roomUpdated');
-      socket.off('gameStarted');
-      socket.off('updateGameState');
+      if (socket) {
+        socket.off('roomUpdated');
+        socket.off('gameStarted');
+        socket.off('updateGameState');
+      }
     };
   }, []);
 
   /**
-   * Récupère l'IP locale du serveur pour affichage,
-   * afin que d'autres PC du LAN puissent se connecter.
+   * Récupère l'adresse IP locale pour affichage
    */
   const fetchLocalIP = async () => {
     try {
@@ -74,16 +68,17 @@ const GamePage: React.FC = () => {
         setLocalIP(null);
       }
     } catch (error) {
-      console.error('Erreur lors de la récupération de l\'IP locale:', error);
+      console.error('Erreur IP locale:', error);
       setLocalIP(null);
     }
   };
 
   /**
-   * Lance la partie (startGame), ce qui distribue les cartes.
+   * Démarre la partie
    */
-  const handleStartGame = () => {
+  const handleStartGame = async () => {
     if (!roomId) return;
+    const socket = await initializeSocket();
     socket.emit('startGame', { roomId }, (response: { success: boolean; error?: string }) => {
       if (!response.success) {
         console.error(response.error);
@@ -92,18 +87,16 @@ const GamePage: React.FC = () => {
   };
 
   /**
-   * Permet, si besoin, de re-demander l'état au serveur.
-   * (Normalement inutile mais peut servir a des fin de test/debug)
+   * Actions de jeu : Hit ou Stand
    */
-  const handleRequestState = () => {
+  const handlePlayerAction = async (action: 'hit' | 'stand') => {
     if (!roomId) return;
+    const socket = await initializeSocket();
     socket.emit(
-      'requestGameState',
-      { roomId },
-      (response: { success: boolean; state?: BlackJackPlayerState[]; error?: string }) => {
-        if (response.success && response.state) {
-          setBlackJackPlayers(response.state);
-        } else {
+      action === 'hit' ? 'playerHit' : 'playerStand',
+      { roomId, playerId: 'votre-id-joueur' },
+      (response: { success: boolean; error?: string }) => {
+        if (!response.success) {
           console.error(response.error);
         }
       }
@@ -112,59 +105,30 @@ const GamePage: React.FC = () => {
 
   return (
     <div className="game-container">
-      <h2>Partie : {roomId}</h2>
+      <h1>BlackJack - Salle {roomId}</h1>
 
-      {/* Si la partie n'est pas encore lancée, on affiche la liste des joueurs + IP locale */}
       {!gameStarted && (
-        <div className="pre-game-section">
-          <h3>Joueurs connectés avant le lancement :</h3>
-          <ul>
+        <div className="pre-game">
+          <h2>En attente du lancement...</h2>
+          <ul className="players-list">
             {players.map((player) => (
               <li key={player.id}>{player.nickname}</li>
             ))}
           </ul>
-
-          {/* Bouton pour lancer la partie */}
-          <button onClick={handleStartGame} style={{ marginTop: '20px' }}>
-            Lancer la partie
+          <button className="btn-primary" onClick={handleStartGame}>
+            Démarrer la Partie
           </button>
-
-          {/* Indicateur d'adresse IP locale (pour se connecter en LAN) */}
-          {localIP && (
-            <div className="local-ip-info">
-              <p>
-                Adresse IP locale du serveur : <strong>{localIP}:3000</strong>
-              </p>
-              <p>
-                Utilisez ce format dans un navigateur d'un autre PC du LAN pour accéder à l'application.
-              </p>
-            </div>
-          )}
+          {localIP && <p>Connectez-vous via : {localIP}:3000</p>}
         </div>
       )}
 
-      {/* Si la partie est lancée, on affiche la distribution (mains) */}
       {gameStarted && (
-        <div className="game-started-section">
-          <h3>BlackJack en cours</h3>
-          <button onClick={handleRequestState} style={{ marginBottom: '10px' }}>
-            Rafraîchir l'état
-          </button>
-
-          {blackJackPlayers.map((p) => (
-            <div key={p.id} className="player-section">
-              <h4>{p.nickname}</h4>
-              <div className="card-list">
-                {p.hand.map((card, index) => (
-                  <div className="card-item" key={index}>
-                    {/* e.g.: "A of SPADES" */}
-                    {card.rank} of {card.suit}
-                  </div>
-                ))}
-              </div>
-              <span className="score-label">Score : {p.score}</span>
-            </div>
+        <div className="game-board">
+          {blackJackPlayers.map((player) => (
+            <div key={player.id}>{player.nickname} - Score: {player.score}</div>
           ))}
+          <button onClick={() => handlePlayerAction('hit')}>Tirer</button>
+          <button onClick={() => handlePlayerAction('stand')}>Rester</button>
         </div>
       )}
     </div>

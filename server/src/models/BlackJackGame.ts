@@ -1,6 +1,7 @@
 import { Deck } from './Deck';
 import { Player } from './Player';
 import { BlackJackPlayer } from './BlackJackPlayer';
+import { Card } from './Card';
 
 /**
  * Classe BlackJackGame, représentant une partie de Blackjack.
@@ -71,4 +72,33 @@ export class BlackJackGame {
       score: bjPlayer.getScore(),
     }));
   }
+
+  /**
+   * Le joueur tire une carte.
+   */
+  public drawCardForPlayer(playerId: string): Card | null {
+    const player = this.players.find((p) => p.id === playerId);
+    if (!player) return null;
+
+    const card = this.deck.drawCard();
+    if (card) {
+      player.addCard(card);
+    }
+    return card || null;
+  }
+
+  /**
+   * Passe au joueur suivant.
+   */
+  public nextPlayer(): void {
+    // Implémentation pour passer au joueur suivant
+  }
+
+  /**
+   * Détermine les gagnants de la partie.
+   */
+  public checkWinners(): BlackJackPlayer[] {
+    return this.players.filter((p) => p.getScore() <= 21);
+  }
+
 }

@@ -46,10 +46,12 @@ function getLocalIPv4Address(): string | null {
  * notamment l'adresse IP locale, pour un usage en LAN.
  */
 app.get('/api/server-info', (req: express.Request, res: express.Response): void => {
+  console.log('[API] Requête reçue sur /api/server-info');
   try {
     const localIP = getLocalIPv4Address();
 
     if (!localIP) {
+      console.warn('[API] Aucune adresse IP locale trouvée');
       res.status(500).json({
         success: false,
         message: 'Impossible de détecter une adresse IP locale',
@@ -57,6 +59,7 @@ app.get('/api/server-info', (req: express.Request, res: express.Response): void 
       return;
     }
 
+    console.log(`[API] Adresse IP locale détectée : ${localIP}`);
     res.status(200).json({
       success: true,
       localIP,
@@ -69,7 +72,6 @@ app.get('/api/server-info', (req: express.Request, res: express.Response): void 
     });
   }
 });
-
 
 // Endpoint racine
 app.get('/', (req, res) => {
@@ -179,6 +181,31 @@ io.on('connection', (socket) => {
       callback({ success: false, error: err.message });
     }
   });
+
+  // HIT
+  socket.on('playerHit', (data, callback) => {
+    const { roomId, playerId } = data;
+    const result = BlackJackService.playerHit(roomId, playerId);
+    if (!result.success) {
+      callback({ success: false, error: result.error });
+      return;
+    }
+    io.to(roomId).emit('updateGameState', { state: BlackJackService.getGameState(roomId).state });
+    callback({ success: true });
+  });
+
+  // STAND
+  socket.on('playerStand', (data, callback) => {
+    const { roomId, playerId } = data;
+    const result = BlackJackService.playerStand(roomId, playerId);
+    if (!result.success) {
+      callback({ success: false, error: result.error });
+      return;
+    }
+    io.to(roomId).emit('updateGameState', { state: BlackJackService.getGameState(roomId).state });
+    callback({ success: true });
+  });
+
 
   // DISCONNECT
   socket.on('disconnect', () => {

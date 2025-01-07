@@ -1,28 +1,29 @@
-# Utiliser une image node officielle pour builder
+# Étape 1 : Build de l'application React
 FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# Copier les fichiers de config pour installer les dépendances
+# Installer les dépendances
 COPY package.json package-lock.json ./
 RUN npm install
 
-# Copier le code source et builder
-COPY . .
+# Copier le code source et construire l'application
+COPY . ./
 RUN npm run build
 
-# -- Phase finale (serveur web léger) --
+# Étape 2 : Serveur statique
 FROM node:18-alpine AS runner
 
 WORKDIR /app
 
-# On installe un petit serveur http statique (ex: 'serve')
+# Installer un serveur HTTP statique
 RUN npm install -g serve
 
-# Copier les builds générés
+# Copier le build
 COPY --from=builder /app/build ./build
 
-# Exposer le port 3000
+# Exposer le port
 EXPOSE 3000
 
+# Démarrer le serveur React
 CMD ["serve", "-s", "build", "-l", "3000"]
