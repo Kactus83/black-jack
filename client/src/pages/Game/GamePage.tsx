@@ -187,10 +187,13 @@ const GamePage: React.FC = () => {
               }
             >
               <h3>{player.nickname}</h3>
+              <div className="chips-info">
+                <p>Chips: {player.chips}</p>
+                <p>Bet: {player.bet}</p>
+              </div>
               <div className="hand">
                 {player.hand.map((card, index) => (
                   <div key={index} className="card">
-                    {/* Affichage textuel, par ex. "A ♣" ou "10 ♥" */}
                     {card.rank} {renderSuitSymbol(card.suit)}
                   </div>
                 ))}

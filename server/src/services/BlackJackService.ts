@@ -36,15 +36,14 @@ class BlackJackService {
       return { success: false, error: 'No BlackJackGame for this room' };
     }
 
-    const player = game.getPlayers().find((p) => p.id === playerId);
-    if (!player) {
-      return { success: false, error: 'Player not found in this game' };
-    }
-
     const card = game.drawCardForPlayer(playerId);
     if (!card) {
-      // => Soit plus de cartes, soit c'est pas son tour, ou isGameOver
       return { success: false, error: 'Cannot draw card at this moment' };
+    }
+
+    // Si la partie est finie => schedule new game
+    if (game.isGameFinished()) {
+      BlackJackService.scheduleNewGameIn5Sec(roomId);
     }
 
     return { success: true };
@@ -56,8 +55,13 @@ class BlackJackService {
       return { success: false, error: 'No BlackJackGame for this room' };
     }
 
-    // Passer au joueur suivant
     game.nextPlayer(playerId);
+
+    // Si la partie est finie => schedule new game
+    if (game.isGameFinished()) {
+      BlackJackService.scheduleNewGameIn5Sec(roomId);
+    }
+
     return { success: true };
   }
 
@@ -68,6 +72,35 @@ class BlackJackService {
     }
     const winners = game.checkWinners();
     return { success: true, winners };
+  }
+
+  /**
+   * Programmera une nouvelle partie dans 5 secondes,
+   * en réinitialisant tout via startGame(roomId).
+   */
+  private static scheduleNewGameIn5Sec(roomId: string) {
+    console.log(`[BlackJackService] La partie est terminée. Nouvelle partie dans 5 secondes...`);
+    setTimeout(() => {
+      const room = GameRoomManager.getInstance().getRoom(roomId);
+      if (!room) {
+        console.warn(`Impossible de relancer la partie pour la room: ${roomId} (room introuvable).`);
+        return;
+      }
+      console.log(`[BlackJackService] Relance de la partie pour la room: ${roomId}`);
+      BlackJackService.startGame(roomId);
+
+      // Après avoir relancé, on peut diffuser l'état initial
+      const stateResult = BlackJackService.getGameState(roomId);
+      if (stateResult.success && stateResult.state) {
+        // On utilise Socket.IO pour envoyer l'update
+        // => Besoin d'accès au io (serveur)? Soit on l'importe, soit on émet un event global
+        // Approach : On émet un event custom 'newGameStarted' si on veut
+        // Sinon, le front fera un 'requestGameState' en boucle.
+
+        // [Optionnel] Emettre un event 'updateGameState'
+        // (La relance auto par le backend est un peu tricky sans un handle direct au io.)
+      }
+    }, 5000);
   }
 }
 

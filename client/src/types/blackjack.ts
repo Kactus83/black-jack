@@ -51,6 +51,8 @@ export interface BlackJackPlayerState {
   isBusted: boolean;      // Indique si le joueur a dépassé 21
   hasStood: boolean;      // Indique si le joueur a décidé de rester (stand)
   isGameOver: boolean;    // Indique si la partie est terminée pour ce joueur
+  chips?: number; // Système de mises
+  bet?: number;
 }
 
   

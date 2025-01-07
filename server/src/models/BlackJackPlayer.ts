@@ -9,9 +9,11 @@ import { Card } from './Card';
 export class BlackJackPlayer extends Player {
   public hand: Card[] = [];
 
-  // >>> AJOUT POUR FIN DE PARTIE
-  public isBusted: boolean = false;  // Vrai si score > 21
-  public hasStood: boolean = false;  // Vrai si le joueur a fait "Stand"
+  // État de la partie
+  public isBusted: boolean = false;
+  public hasStood: boolean = false;
+  public chips: number = 100;  // Solde du joueur
+  public bet: number = 0;      // Mise actuelle du joueur
 
   constructor(nickname: string) {
     super(nickname);
@@ -31,6 +33,7 @@ export class BlackJackPlayer extends Player {
     this.hand = [];
     this.isBusted = false;
     this.hasStood = false;
+    this.bet = 0; // On remet la mise à 0
   }
 
   /**
@@ -54,7 +57,6 @@ export class BlackJackPlayer extends Player {
           score += 10;
           break;
         default:
-          // Les rangs 2..9 passent par parseInt
           score += parseInt(card.rank, 10);
           break;
       }
