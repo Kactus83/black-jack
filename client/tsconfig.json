@@ -1,14 +1,26 @@
 {
-    "compilerOptions": {
-      "target": "ES2020",
-      "module": "CommonJS",
-      "outDir": "dist",
-      "rootDir": "src",
-      "strict": true,
-      "esModuleInterop": true,
-      "forceConsistentCasingInFileNames": true
-    },
-    "include": ["src/**/*"],
-    "exclude": ["node_modules", "dist"]
-  }
-  
+  "compilerOptions": {
+    "target": "es5", // Compatibilité avec les navigateurs modernes et plus anciens
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "allowJs": true, // Permet l'inclusion de fichiers JavaScript
+    "skipLibCheck": true, // Ignore la vérification des types dans les fichiers de déclaration
+    "esModuleInterop": true, // Compatibilité avec les modules ES
+    "allowSyntheticDefaultImports": true, // Permet les imports par défaut synthétiques
+    "strict": true, // Active toutes les vérifications strictes de TypeScript
+    "forceConsistentCasingInFileNames": true, // Force la cohérence des majuscules/minuscules dans les noms de fichiers
+    "noFallthroughCasesInSwitch": true, // Empêche le passage à travers les cas de switch
+    "module": "esnext", // Utilisation des modules ES
+    "moduleResolution": "node", // Résolution des modules de style Node.js
+    "resolveJsonModule": true, // Permet l'importation de fichiers JSON
+    "isolatedModules": true, // Assure que chaque fichier est traité comme un module isolé
+    "noEmit": true, // Ne génère pas de fichiers de sortie
+    "jsx": "react-jsx" // Utilisation de la nouvelle transformation JSX de React 17+
+  },
+  "include": [
+    "src"
+  ]
+}

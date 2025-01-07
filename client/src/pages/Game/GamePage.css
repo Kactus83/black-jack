@@ -1,0 +1,54 @@
+.game-container {
+    padding: 20px;
+}
+
+.pre-game-section {
+    margin-top: 20px;
+    margin-bottom: 30px;
+}
+
+.local-ip-info {
+    margin-top: 20px;
+    background-color: #f2f2f2;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+.game-started-section {
+    margin-top: 20px;
+}
+
+.player-section {
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 15px;
+}
+
+.player-section h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    margin-bottom: 6px;
+}
+
+.card-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.card-item {
+    padding: 8px 10px;
+    background-color: #f7f7f7;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    min-width: 70px;
+    text-align: center;
+}
+
+.score-label {
+    font-weight: bold;
+}
+  

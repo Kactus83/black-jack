@@ -11,8 +11,11 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
     "express": "^4.21.2",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.1",
+    "uuid": "^11.0.4"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",

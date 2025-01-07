@@ -1,28 +1,25 @@
-import React, { useEffect } from 'react';
-import { io } from 'socket.io-client';
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import HomePage from './pages/Home/HomePage';
+import LobbyPage from './pages/Lobby/LobbyPage';
+import GamePage from './pages/Game/GamePage';
 
-const socket = io('http://localhost:3001');
-
-function App() {
-  useEffect(() => {
-    socket.emit('hello', 'Hello from client!');
-
-    socket.on('hello-response', (msg) => {
-      console.log('Server responded:', msg);
-    });
-
-    return () => {
-      socket.off('hello-response');
-      socket.disconnect();
-    };
-  }, []);
-
+const App: React.FC = () => {
   return (
-    <div style={{ padding: 20 }}>
-      <h1>Blackjack Client</h1>
-      <p>Open DevTools console to see Socket.IO messages.</p>
-    </div>
+    <Routes>
+      {/* Page d'accueil */}
+      <Route path="/" element={<HomePage />} />
+
+      {/* Lobby */}
+      <Route path="/lobby" element={<LobbyPage />} />
+
+      {/* Salle de jeu */}
+      <Route path="/game/:roomId" element={<GamePage />} />
+
+      {/* Redirection si route non définie */}
+      <Route path="*" element={<Navigate to="/" />} />
+    </Routes>
   );
-}
+};
 
 export default App;
