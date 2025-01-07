@@ -16,6 +16,7 @@ import './GamePage.css';
  * - Affiche la liste des joueurs avant le lancement.
  * - Affiche les cartes (sous forme textuelle stylée) et le score pour chaque joueur.
  * - Propose des actions "Tirer" (Hit) et "Rester" (Stand).
+ * - Amélioration UI : highlight si c'est le joueur courant, indication BUST / STAND, gestion Game Over.
  */
 const GamePage: React.FC = () => {
   const { roomId } = useParams();
@@ -29,6 +30,12 @@ const GamePage: React.FC = () => {
 
   // Adresse IP locale pour affichage / connexion LAN
   const [localIP, setLocalIP] = useState<string | null>(null);
+
+  // Indique si la partie est terminée (via isGameOver)
+  const [gameOver, setGameOver] = useState<boolean>(false);
+
+  // Liste basique de winners
+  const [winners, setWinners] = useState<string[]>([]);
 
   /**
    * useEffect : Initialise la connexion socket,
@@ -55,6 +62,19 @@ const GamePage: React.FC = () => {
       socket.on('updateGameState', (payload: UpdateGameStatePayload) => {
         console.log('updateGameState:', payload.state);
         setBlackJackPlayers(payload.state);
+
+        // Si isGameOver existe sur n'importe quel player => gameOver
+        const anyIsGameOver = payload.state.some((p) => p.isGameOver);
+        setGameOver(anyIsGameOver);
+
+        // Exemple : si on veut afficher winners, on peut vérifier
+        if (anyIsGameOver) {
+          // on filtre ceux qui ne sont pas bust
+          const winnersList = payload.state
+            .filter((p) => !p.isBusted)
+            .map((p) => p.nickname);
+          setWinners(winnersList);
+        }
       });
 
       fetchLocalIP();
@@ -103,11 +123,12 @@ const GamePage: React.FC = () => {
 
   /**
    * Actions de jeu : Tirer (Hit) ou Rester (Stand).
+   * Désactive si gameOver = true.
    */
   const handlePlayerAction = async (action: 'hit' | 'stand') => {
-    if (!roomId) return;
+    if (!roomId || gameOver) return; // si la partie est finie, ne plus rien faire
 
-    // >>> Ajout : récupérer le playerId stocké lors du createGame/joinGame
+    // Récupérer le vrai playerId
     const playerId = localStorage.getItem('playerId');
     if (!playerId) {
       console.error('Aucun playerId trouvé dans localStorage. Vérifiez la création ou la jonction de partie.');
@@ -154,10 +175,17 @@ const GamePage: React.FC = () => {
       )}
 
       {/* Section en cours de jeu */}
-      {gameStarted && (
+      {gameStarted && !gameOver && (
         <div className="game-board">
           {blackJackPlayers.map((player) => (
-            <div key={player.id} className="player-card">
+            <div
+              key={player.id}
+              className={
+                'player-card' +
+                (player.isCurrent ? ' is-current' : '') +
+                (player.isBusted ? ' is-busted' : '')
+              }
+            >
               <h3>{player.nickname}</h3>
               <div className="hand">
                 {player.hand.map((card, index) => (
@@ -167,14 +195,58 @@ const GamePage: React.FC = () => {
                   </div>
                 ))}
               </div>
+
+              {player.isBusted && <p className="status-tag bust-tag">BUST</p>}
+              {player.hasStood && !player.isBusted && <p className="status-tag stand-tag">STAND</p>}
+
               <p className="score">Score: {player.score}</p>
+
+              {player.isCurrent && (
+                <p className="status-info">C'est le tour de {player.nickname} !</p>
+              )}
             </div>
           ))}
         </div>
       )}
 
-      {/* Section pour les boutons d'action si la partie est lancée */}
-      {gameStarted && (
+      {/* Section Game Over */}
+      {gameStarted && gameOver && (
+        <div className="game-over-section">
+          <h2>Game Over</h2>
+          {winners.length > 0 ? (
+            <p>
+              Gagnant(s) : {winners.join(', ')}
+            </p>
+          ) : (
+            <p>Aucun gagnant... (tout le monde bust)</p>
+          )}
+
+          <div className="game-board">
+            {blackJackPlayers.map((player) => (
+              <div
+                key={player.id}
+                className={'player-card' + (player.isBusted ? ' is-busted' : '')}
+              >
+                <h3>{player.nickname}</h3>
+                <div className="hand">
+                  {player.hand.map((card, index) => (
+                    <div key={index} className="card">
+                      {card.rank} {renderSuitSymbol(card.suit)}
+                    </div>
+                  ))}
+                </div>
+                {player.isBusted && <p className="status-tag bust-tag">BUST</p>}
+                {player.hasStood && !player.isBusted && <p className="status-tag stand-tag">STAND</p>}
+
+                <p className="score">Score: {player.score}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Section pour les boutons d'action si la partie est lancée et non terminée */}
+      {gameStarted && !gameOver && (
         <div className="player-actions">
           <button className="btn-action" onClick={() => handlePlayerAction('hit')}>
             Tirer (Hit)

@@ -9,6 +9,10 @@ import { Card } from './Card';
 export class BlackJackPlayer extends Player {
   public hand: Card[] = [];
 
+  // >>> AJOUT POUR FIN DE PARTIE
+  public isBusted: boolean = false;  // Vrai si score > 21
+  public hasStood: boolean = false;  // Vrai si le joueur a fait "Stand"
+
   constructor(nickname: string) {
     super(nickname);
   }
@@ -25,11 +29,13 @@ export class BlackJackPlayer extends Player {
    */
   public clearHand(): void {
     this.hand = [];
+    this.isBusted = false;
+    this.hasStood = false;
   }
 
   /**
    * Calcule le score actuel du joueur en considérant les As comme 1 ou 11.
-   * (Méthode simple à amméliorer pour gérer les split, double, etc.)
+   * (Méthode simple à améliorer pour gérer les split, double, etc.)
    */
   public getScore(): number {
     let score = 0;
@@ -56,7 +62,7 @@ export class BlackJackPlayer extends Player {
 
     // Ajuster la valeur des As si le score dépasse 21
     while (score > 21 && aceCount > 0) {
-      score -= 10; 
+      score -= 10;
       aceCount--;
     }
 

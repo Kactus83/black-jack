@@ -90,6 +90,53 @@
     letter-spacing: 1px;
     color: #ccc;
   }
+
+
+
+/* Ajout : highlight si c'est le joueur courant */
+.is-current {
+  border: 2px solid #2ecc71 !important;
+  position: relative;
+}
+
+/* Ajout : si le joueur est bust */
+.is-busted {
+  opacity: 0.6;
+}
+
+/* Tags (bust / stand) */
+.status-tag {
+  font-weight: bold;
+  padding: 4px 8px;
+  display: inline-block;
+  margin-top: 5px;
+  border-radius: 4px;
+}
+
+.bust-tag {
+  background: #e74c3c;
+  color: #fff;
+}
+
+.stand-tag {
+  background: #3498db;
+  color: #fff;
+}
+
+/* Indication de tour */
+.status-info {
+  margin-top: 5px;
+  font-size: 0.9rem;
+  color: #555;
+  font-style: italic;
+}
+
+/* Section Game Over */
+.game-over-section h2 {
+  margin-bottom: 20px;
+  color: #e74c3c;
+  font-size: 1.6rem;
+}
   
   /* Responsive Design */
   @media (max-width: 500px) {

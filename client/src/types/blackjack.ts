@@ -38,15 +38,21 @@ export enum Suit {
     suit: Suit; 
   }
   
-  /**
-   * État d'un joueur dans la partie BlackJack renvoyé par le serveur.
-   */
-  export interface BlackJackPlayerState {
-    id: string;             // l'id unique
-    nickname: string;       // le pseudo
-    hand: Card[];           // la main (liste de cartes)
-    score: number;          // le score calculé côté serveur
-  }
+/**
+ * État d'un joueur dans une partie de Blackjack.
+ * Contient les informations détaillées utilisées après le début du jeu.
+ */
+export interface BlackJackPlayerState {
+  id: string;             // Identifiant unique du joueur
+  nickname: string;       // Pseudo du joueur
+  hand: Card[];           // La main (liste de cartes)
+  score: number;          // Score actuel du joueur calculé côté serveur
+  isCurrent: boolean;     // Indique si c'est au tour de ce joueur
+  isBusted: boolean;      // Indique si le joueur a dépassé 21
+  hasStood: boolean;      // Indique si le joueur a décidé de rester (stand)
+  isGameOver: boolean;    // Indique si la partie est terminée pour ce joueur
+}
+
   
   /**
    * Payload de l'événement "gameStarted"
