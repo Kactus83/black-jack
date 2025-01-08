@@ -20,16 +20,20 @@ class BlackJackService {
   }
 
   public static startGame(roomId: string): { success: boolean; error?: string } {
-    const room = GameRoomManager.getInstance().getRoom(roomId);
-    if (!room) {
-      return { success: false, error: 'Room not found' };
-    }
+      const room = GameRoomManager.getInstance().getRoom(roomId);
+      if (!room) {
+          return { success: false, error: 'Room not found' };
+      }
 
-    const game = new BlackJackGame();
-    game.initGame(room.players);
-    BlackJackService.games.set(roomId, game);
+      if (!BlackJackService.games.has(roomId)) {
+          const game = new BlackJackGame();
+          game.initGame(room.players);
+          BlackJackService.games.set(roomId, game);
+      } else {
+          console.log(`[BlackJackService] Le jeu existe déjà pour la room ${roomId}.`);
+      }
 
-    return { success: true };
+      return { success: true };
   }
 
   public static getGameState(roomId: string): { success: boolean; state?: any; error?: string } {
@@ -87,27 +91,27 @@ class BlackJackService {
   }
 
   /**
-   * Programmera une nouvelle partie dans 5 secondes,
-   * en réinitialisant tout via startGame(roomId).
+   * Programmera une nouvelle partie dans 5 secondes.
    */
   private static scheduleNewGameIn5Sec(roomId: string) {
-    console.log(`[BlackJackService] La partie est terminée. Nouvelle partie dans 5 secondes...`);
-    setTimeout(() => {
-      const room = GameRoomManager.getInstance().getRoom(roomId);
-      if (!room) {
-        console.warn(`Impossible de relancer la partie pour la room: ${roomId} (room introuvable).`);
-        return;
-      }
-      console.log(`[BlackJackService] Relance de la partie pour la room: ${roomId}`);
-      BlackJackService.startGame(roomId);
+      console.log(`[BlackJackService] La partie est terminée. Nouvelle manche dans 5 secondes...`);
+      setTimeout(() => {
+          const game = BlackJackService.games.get(roomId);
+          if (!game) {
+              console.warn(`Impossible de relancer la manche pour la room: ${roomId} (jeu introuvable).`);
+              return;
+          }
+          console.log(`[BlackJackService] Relance de la manche pour la room: ${roomId}`);
+          game.startNextRound();
 
-      // Après avoir relancé, on diffuse l'état
-      const stateResult = BlackJackService.getGameState(roomId);
-      if (stateResult.success && stateResult.state && BlackJackService.io) {
-        BlackJackService.io.to(roomId).emit('updateGameState', { state: stateResult.state });
-      }
-    }, 5000);
+          // Après avoir relancé, on diffuse l'état
+          const stateResult = BlackJackService.getGameState(roomId);
+          if (stateResult.success && stateResult.state && BlackJackService.io) {
+              BlackJackService.io.to(roomId).emit('updateGameState', { state: stateResult.state });
+          }
+      }, 5000);
   }
+
 }
 
 export default BlackJackService;

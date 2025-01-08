@@ -55,7 +55,7 @@ export class BlackJackGame {
   }
 
   /**
-   * Exemple simple : mise fixe de 10, si un joueur n'a pas assez, il mise tout
+   * A amméliorer => pour l'instant : mise fixe de 10, si un joueur n'a pas assez, il mise tout
    */
   private placeBets(): void {
     const betAmount = 10;
@@ -204,11 +204,40 @@ export class BlackJackGame {
       w.chips += share;
     }
 
-    // S'il reste un reliquat (ex: totalBet=10, winners.length=3 => share=3,
-    // 9 distribués, 1 "perdu"), on le laisse perdu ou on l'attribue arbitrairement
+    // Voir quoi faire si il reste un reliquat 
   }
 
   public isGameFinished(): boolean {
     return this.isGameOver;
   }
+
+  /**
+   * Démarre une nouvelle manche.
+   * Réinitialise le deck, les joueurs, et distribue 2 cartes à chacun.
+   */
+  public startNextRound(): void {
+    this.deck = new Deck();
+    this.deck.shuffle();
+    this.currentPlayerIndex = 0;
+    this.isGameOver = false;
+
+    // Réinitialiser l'état temporaire des joueurs (sans toucher aux jetons)
+    for (const player of this.players) {
+        player.clearHand();
+    }
+
+    // Distribuer deux nouvelles cartes à chaque joueur
+    this.players.forEach((bjPlayer) => {
+        const card1 = this.deck.drawCard();
+        const card2 = this.deck.drawCard();
+        if (card1) bjPlayer.addCard(card1);
+        if (card2) bjPlayer.addCard(card2);
+    });
+
+    // Placer les mises pour la nouvelle manche
+    this.placeBets();
+
+    console.log(`[BlackJackGame] Nouvelle manche démarrée.`);
+}
+
 }
