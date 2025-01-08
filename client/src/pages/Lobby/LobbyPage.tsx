@@ -70,11 +70,10 @@ const LobbyPage: React.FC = (): React.ReactElement => {
         response: {
           success: boolean;
           error?: string;
-          playerId?: string; // Ajout pour récupérer le playerId
+          playerId?: string;
         }
       ) => {
         if (response.success && response.playerId) {
-          // On stocke le playerId localement
           localStorage.setItem('playerId', response.playerId);
           navigate(`/game/${roomId}`);
         } else {
@@ -85,27 +84,42 @@ const LobbyPage: React.FC = (): React.ReactElement => {
   };
 
   /**
-   * >>> Ajout : Récupère la liste des parties actives depuis /api/active-games
+   * >>> Modification : Récupère la liste des parties actives via Socket IO
+   * On émet 'fetchActiveGames' avec un callback
    */
   const handleFetchActiveGames = async () => {
     try {
-      const response = await fetch('/api/active-games');
-      const data = await response.json();
-      if (data.success) {
-        setActiveGames(data.rooms);
-      } else {
-        console.error(data.error);
+      const socket = await initializeSocket();
+      if (!socket.connected) {
+        socket.connect();
       }
+
+      socket.emit('fetchActiveGames', (response: {
+        success: boolean;
+        error?: string;
+        rooms?: Array<{
+          roomId: string;
+          playersCount: number;
+          players: { id: string; nickname: string }[];
+        }>
+      }) => {
+        if (!response.success) {
+          console.error('[Lobby] Erreur fetchActiveGames :', response.error);
+          return;
+        }
+        if (response.rooms) {
+          setActiveGames(response.rooms);
+        }
+      });
     } catch (error) {
-      console.error('Erreur lors de la récupération des parties actives :', error);
+      console.error('[Lobby] Erreur lors de la récupération des parties actives :', error);
     }
   };
 
   /**
-   * >>> Ajout : Permet de rejoindre directement une partie depuis la liste
+   * Permet de rejoindre directement une partie depuis la liste
    */
   const handleJoinFromList = async (selectedRoomId: string) => {
-    // On réutilise handleJoinGame, sauf qu'on a déjà roomId
     setRoomId(selectedRoomId);
     await handleJoinGame();
   };
@@ -154,7 +168,7 @@ const LobbyPage: React.FC = (): React.ReactElement => {
         </button>
       </div>
 
-      {/* >>> Ajout : Bouton pour afficher la liste des parties actives */}
+      {/* Bouton pour afficher la liste des parties actives */}
       <div className="lobby-section" style={{ marginTop: '20px' }}>
         <h2>Liste des parties actives</h2>
         <button onClick={handleFetchActiveGames} className="btn-secondary">

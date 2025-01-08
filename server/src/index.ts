@@ -72,49 +72,23 @@ app.get('/api/server-info', (req: Request, res: Response): void => {
   }
 });
 
-
-
-/**
- * Route pour obtenir la liste des parties actives (rooms) :
- *  - roomId
- *  - playersCount
- *  - liste de pseudos
- */
-app.get('/api/active-games', (req, res) => {
-  try {
-    const manager = GameRoomManager.getInstance();
-    const allRoomIds = manager.getAllRooms();
-
-    const roomsData = allRoomIds.map((roomId) => {
-      const room = manager.getRoom(roomId);
-      if (!room) {
-        return null; // ou on filtre
-      }
-      return {
-        roomId,
-        playersCount: room.players.length,
-        players: room.players.map((p) => ({
-          id: p.id,
-          nickname: p.nickname,
-        })),
-      };
-    }).filter(Boolean); // enlever les null s’il y en a
-
-    return res.json({
-      success: true,
-      rooms: roomsData,
-    });
-  } catch (error: any) {
-    console.error('[GET /api/active-games] Erreur :', error.message);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
 // Initialiser le service avec la référence Socket.IO
 BlackJackService.init(io);
 
 io.on('connection', (socket) => {
   console.log('New client connected:', socket.id);
+
+  // Événement pour lister les parties actives
+  socket.on('fetchActiveGames', (callback) => {
+    try {
+      const manager = GameRoomManager.getInstance();
+      const roomsData = manager.getAllRoomsDetailed();
+      // On renvoie le tableau via le callback
+      callback({ success: true, rooms: roomsData });
+    } catch (err: any) {
+      callback({ success: false, error: err.message });
+    }
+  });
 
   // CREATE GAME
   socket.on('createGame', (data, callback) => {

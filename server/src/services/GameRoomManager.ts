@@ -31,6 +31,11 @@ class GameRoomManager {
     return { roomId, player };
   }
 
+  /**
+   * Cette méthode permet de rejoindre une room existante.
+   * @param roomId ID de la room à rejoindre
+   * @param nickname Pseudo du joueur
+   */
   public joinRoom(roomId: string, nickname: string): {
     success: boolean;
     player?: Player;
@@ -47,6 +52,11 @@ class GameRoomManager {
     return { success: true, player };
   }
 
+  /**
+   * Cette méthode permet de récupérer une room par son ID.
+   * @param roomId 
+   * @returns Une instance de GameRoom ou undefined si non trouvée.
+   */
   public getRoom(roomId: string): GameRoom | undefined {
     return this.rooms.get(roomId);
   }
@@ -57,6 +67,37 @@ class GameRoomManager {
    */
   public getAllRooms(): string[] {
     return [...this.rooms.keys()];
+  }
+
+  /**
+   * Retourne la liste détaillée de toutes les rooms,
+   * incluant le nombre de joueurs et la liste de pseudos.
+   */
+  public getAllRoomsDetailed(): Array<{
+    roomId: string;
+    playersCount: number;
+    players: { id: string; nickname: string }[];
+  }> {
+    const roomsArray: Array<{
+      roomId: string;
+      playersCount: number;
+      players: { id: string; nickname: string }[];
+    }> = [];
+
+    for (const roomId of this.rooms.keys()) {
+      const room = this.rooms.get(roomId);
+      if (room) {
+        roomsArray.push({
+          roomId,
+          playersCount: room.players.length,
+          players: room.players.map((p) => ({
+            id: p.id,
+            nickname: p.nickname,
+          })),
+        });
+      }
+    }
+    return roomsArray;
   }
 }
 

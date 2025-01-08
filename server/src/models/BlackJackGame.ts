@@ -162,22 +162,50 @@ export class BlackJackGame {
   }
 
   /**
-   * Distribue les gains aux joueurs qui ont <= 21, partage simple du pot
+   * Détermine les gagnants en fonction du plus gros score ≤ 21.
+   * Renvoie un tableau (possiblement >1 si ex-aequo).
+   */
+  public checkWinners(): BlackJackPlayer[] {
+    const validPlayers = this.players.filter((p) => p.getScore() <= 21);
+    if (validPlayers.length === 0) {
+      return []; // Personne n'a <=21 => pas de gagnant
+    }
+    // On calcule le score max
+    const maxScore = Math.max(...validPlayers.map((p) => p.getScore()));
+    // On renvoie tous ceux qui ont ce score max
+    return validPlayers.filter((p) => p.getScore() === maxScore);
+  }
+
+  /**
+   * Distribue les gains en fonction de checkWinners().
+   * - Un seul gagnant : il prend tout le pot.
+   * - Plusieurs gagnants ex-aequo : partage équitable du pot.
+   * - Personne sous 21 => pot perdu (aucun chips restitué).
    */
   private distributeWinnings(): void {
     const winners = this.checkWinners();
-    if (winners.length === 0) {
-      return; // Personne ne gagne => pot perdu
-    }
+
+    // Calcul du pot total
     const totalBet = this.players.reduce((acc, p) => acc + p.bet, 0);
+
+    if (winners.length === 0) {
+      // Personne ne gagne => pot perdu, on ne restitue rien
+      return;
+    }
+    if (winners.length === 1) {
+      // Un seul gagnant => prend tout
+      winners[0].chips += totalBet;
+      return;
+    }
+
+    // Sinon, partage ex-aequo entre tous les winners
     const share = Math.floor(totalBet / winners.length);
     for (const w of winners) {
       w.chips += share;
     }
-  }
 
-  public checkWinners() {
-    return this.players.filter((p) => p.getScore() <= 21);
+    // S'il reste un reliquat (ex: totalBet=10, winners.length=3 => share=3,
+    // 9 distribués, 1 "perdu"), on le laisse perdu ou on l'attribue arbitrairement
   }
 
   public isGameFinished(): boolean {
