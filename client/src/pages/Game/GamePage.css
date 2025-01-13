@@ -1,39 +1,50 @@
-/* Conteneur principal */
-.game-container {
-  padding: 20px;
-  max-width: 900px;
-  margin: 0 auto;
-  text-align: center;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  color: #222;
+/* ============================= */
+/*      STYLES POUR GAMEPAGE     */
+/* ============================= */
+
+/* Arrière-plan façon table de Blackjack */
+.game-container.blackjack-background {
+  /* Si tu veux un fond "feutrine" unie, tu peux utiliser un simple radial-gradient ou un pattern. */
+  background: radial-gradient(circle at center, #0c3b0c 0%, #040b04 100%);
+  min-height: 100vh;
+  padding-top: 40px;
+  box-sizing: border-box;
 }
 
-/* Titre principal */
-.game-container h1 {
-  font-size: 2rem;
-  margin-bottom: 10px;
-}
-
-/* Section Pré-Game */
-.pre-game {
-  margin: 20px 0;
-}
-
-.pre-game h2 {
-  font-size: 1.6rem;
+/* Conteneur principal ajusté */
+.game-container.blackjack-background h1 {
+  color: #fff;
+  text-shadow: 1px 1px 2px #000;
   margin-bottom: 20px;
+}
+
+/* Section "pre-game" dans ce fond blackjack */
+.pre-game {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 10px;
+  margin: 20px auto;
+  max-width: 500px;
+  padding: 20px;
+  text-align: center;
+}
+
+/* Titre "Waiting to start..." */
+.pre-game h2 {
+  color: #2c3e50;
+  margin-bottom: 15px;
 }
 
 /* Liste des joueurs avant le lancement */
 .players-list {
+  background-color: #fff;
+  border-radius: 6px;
+  border: 1px solid #ddd;
   list-style: none;
   padding: 0;
   margin: 20px auto;
   max-width: 300px;
   text-align: left;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  background: #f7f7f7;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .players-list li {
@@ -46,9 +57,9 @@
   border-bottom: none;
 }
 
-/* Bouton principal (Démarrer la partie) */
+/* Bouton "Start Game" style réhaussé */
 .btn-primary {
-  background: linear-gradient(to bottom right, #4caf50, #388e3c);
+  background: linear-gradient(135deg, #27ae60, #1e8449);
   color: #fff;
   padding: 12px 30px;
   border: none;
@@ -61,10 +72,72 @@
 }
 
 .btn-primary:hover {
-  background: linear-gradient(to bottom right, #43a047, #2e7d32);
+  background: linear-gradient(135deg, #2ecc71, #27ae60);
 }
 
-/* Indication d'adresse IP */
+/* Petit panel pour ajouter un joueur local */
+.add-local-player-section {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.add-local-player-section h3 {
+  color: #2c3e50;
+  margin-bottom: 10px;
+}
+
+/* Bouton secondaire pour "Ajouter joueur" */
+.btn-secondary {
+  background-color: #2980b9;
+  color: #fff;
+  padding: 10px 20px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-transform: uppercase;
+  font-weight: bold;
+  transition: background 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background-color: #1f618d;
+}
+
+/* Champ de saisie générique pour GamePage */
+.form-input {
+  font-size: 1rem;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  width: 200px;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: #3498db;
+}
+
+/* Sélecteur générique */
+.form-select {
+  font-size: 1rem;
+  padding: 8px 12px;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-right: 10px;
+  outline: none;
+  min-width: 160px;
+  box-sizing: border-box;
+}
+
+.form-select:focus {
+  border-color: #2980b9;
+}
+
+/* Indication d'adresse IP (LAN) */
 .local-ip-info {
   margin-top: 15px;
   font-size: 0.9rem;
@@ -73,42 +146,47 @@
   padding: 10px;
   border-radius: 4px;
   display: inline-block;
+  color: #333;
 }
 
-/* Section en cours de jeu */
+/* Board de jeu */
 .game-board {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 15px;
   margin-top: 20px;
+  padding-bottom: 40px; /* pour éviter que les cartes soient collées au bas */
 }
 
+/* Cartes des joueurs */
 .player-card {
-  background: #f9f9f9;
-  border: 1px solid #ddd;
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid #ddd;
   border-radius: 8px;
   padding: 15px;
   width: 220px;
   text-align: center;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
 }
 
+/* Nom du joueur */
 .player-card h3 {
   margin: 0;
   font-size: 1.2rem;
   margin-bottom: 10px;
   text-transform: uppercase;
-  color: #444;
+  color: #2c3e50;
 }
 
-/* Ajout pour afficher chips et bet */
+/* Info sur les jetons et la mise */
 .chips-info {
   font-size: 0.9rem;
   margin-bottom: 8px;
   color: #555;
 }
 
+/* Main du joueur (les cartes) */
 .hand {
   display: flex;
   justify-content: center;
@@ -117,13 +195,14 @@
   flex-wrap: wrap;
 }
 
+/* Style d'une carte */
 .card {
   background: #ffffff;
   border: 2px solid #ccc;
   padding: 8px 10px;
   border-radius: 4px;
   text-align: center;
-  min-width: 50px;
+  min-width: 45px;
   font-size: 1rem;
   font-weight: 600;
   transition: transform 0.2s ease;
@@ -134,21 +213,20 @@
   border-color: #888;
 }
 
+/* Score */
 .score {
   font-weight: bold;
   margin-top: 10px;
   font-size: 1.1rem;
 }
 
-/* Indication BUST / STAND */
-.status-tag {
-  font-weight: bold;
-  padding: 4px 8px;
-  display: inline-block;
-  margin-top: 5px;
-  border-radius: 4px;
+/* Mettre en évidence le joueur courant */
+.is-current {
+  border-color: #2ecc71 !important;
+  box-shadow: 0 0 8px #2ecc71;
 }
 
+/* BUST / STAND => styles déjà existants */
 .bust-tag {
   background: #e74c3c;
   color: #fff;
@@ -159,47 +237,51 @@
   color: #fff;
 }
 
-.is-current {
-  border: 2px solid #2ecc71 !important;
-}
-
+/* Transition opacité si bust */
 .is-busted {
   opacity: 0.6;
 }
 
-/* Indication de tour */
+/* Indication "c'est le tour de X" */
 .status-info {
   margin-top: 5px;
   font-size: 0.9rem;
-  color: #555;
+  color: #444;
   font-style: italic;
 }
 
-/* Fin de partie */
+/* Game Over */
 .game-over-section h2 {
   margin-bottom: 20px;
   color: #e74c3c;
   font-size: 1.6rem;
 }
 
-/* Actions du joueur (Tirer / Rester) */
+/* Actions du joueur (Hit / Stand) */
 .player-actions {
-  margin-top: 30px;
+  margin: 30px 0;
+  text-align: center;
 }
 
+/* Boutons d'action (Hit / Stand) */
 .btn-action {
   margin: 5px;
   padding: 10px 25px;
-  background: linear-gradient(to bottom right, #3498db, #2a82c9);
+  background: linear-gradient(135deg, #3498db, #2a82c9);
   color: white;
   border: none;
   border-radius: 6px;
   cursor: pointer;
   font-size: 1rem;
   font-weight: 600;
+  text-transform: uppercase;
   transition: background 0.3s ease;
 }
 
 .btn-action:hover {
-  background: linear-gradient(to bottom right, #2980b9, #2471a3);
+  background: linear-gradient(135deg, #2980b9, #2471a3);
 }
+
+/* ============================= */
+/*      FIN STYLES GAMEPAGE      */
+/* ============================= */

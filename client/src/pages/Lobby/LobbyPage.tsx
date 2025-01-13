@@ -5,7 +5,7 @@ import './LobbyPage.css';
 
 /**
  * LobbyPage : Permet de créer ou rejoindre une partie,
- * et désormais d'afficher la liste des parties actives.
+ * et d'afficher la liste des parties actives.
  */
 const LobbyPage: React.FC = (): React.ReactElement => {
   const navigate = useNavigate();
@@ -20,7 +20,8 @@ const LobbyPage: React.FC = (): React.ReactElement => {
   }> | null>(null);
 
   /**
-   * Crée une nouvelle partie avec un pseudo
+   * Crée une nouvelle partie avec un pseudo.
+   * Stocke le playerId et aussi le nickname dans localStorage.
    */
   const handleCreateGame = async () => {
     if (!nickname.trim()) return;
@@ -38,12 +39,14 @@ const LobbyPage: React.FC = (): React.ReactElement => {
           success: boolean;
           roomId?: string;
           error?: string;
-          playerId?: string; // Ajout pour récupérer le playerId
+          playerId?: string;
         }
       ) => {
         if (response.success && response.roomId && response.playerId) {
-          // On stocke le playerId localement
+          // On stocke le playerId et le nickname
           localStorage.setItem('playerId', response.playerId);
+          localStorage.setItem('playerNickname', nickname);
+
           navigate(`/game/${response.roomId}`);
         } else {
           console.error(response.error);
@@ -53,7 +56,8 @@ const LobbyPage: React.FC = (): React.ReactElement => {
   };
 
   /**
-   * Rejoint une partie existante via un Room ID
+   * Rejoint une partie existante via un Room ID.
+   * Stocke aussi le nickname et le playerId dans localStorage.
    */
   const handleJoinGame = async () => {
     if (!nickname.trim() || !roomId.trim()) return;
@@ -75,6 +79,8 @@ const LobbyPage: React.FC = (): React.ReactElement => {
       ) => {
         if (response.success && response.playerId) {
           localStorage.setItem('playerId', response.playerId);
+          localStorage.setItem('playerNickname', nickname);
+
           navigate(`/game/${roomId}`);
         } else {
           console.error(response.error);
@@ -84,8 +90,7 @@ const LobbyPage: React.FC = (): React.ReactElement => {
   };
 
   /**
-   * >>> Modification : Récupère la liste des parties actives via Socket IO
-   * On émet 'fetchActiveGames' avec un callback
+   * Récupère la liste des parties actives via Socket.IO.
    */
   const handleFetchActiveGames = async () => {
     try {

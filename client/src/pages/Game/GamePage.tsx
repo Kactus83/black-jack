@@ -11,35 +11,67 @@ import {
 import './GamePage.css';
 
 /**
+ * Structure interne pour représenter un joueur local.
+ * (Celui créé depuis la Lobby OU ajouté sur place.)
+ */
+type LocalPlayer = {
+  nickname: string;
+  playerId: string;
+};
+
+/**
  * Page principale de l'interface du jeu de BlackJack.
  * - Gère la connexion Socket.IO pour l'état du jeu.
  * - Affiche la liste des joueurs avant le lancement.
- * - Affiche les cartes (sous forme textuelle stylée) et le score pour chaque joueur.
- * - Propose des actions "Tirer" (Hit) et "Rester" (Stand).
- * - Amélioration UI : highlight si c'est le joueur courant, indication BUST / STAND, gestion Game Over.
+ * - Affiche cartes / score pour chaque joueur.
+ * - Multi-joueurs locaux : un select permet de choisir qui agit (Hit/Stand).
  */
 const GamePage: React.FC = () => {
   const { roomId } = useParams();
 
-  // Liste des joueurs avant le lancement
+  // Liste des joueurs avant le lancement (envoyée par "roomUpdated")
   const [players, setPlayers] = useState<Player[]>([]);
+
+  // Indique si la partie est démarrée
   const [gameStarted, setGameStarted] = useState<boolean>(false);
 
-  // État du jeu (cartes, score) une fois la partie lancée
+  // État du jeu (cartes, scores) une fois la partie lancée
   const [blackJackPlayers, setBlackJackPlayers] = useState<BlackJackPlayerState[]>([]);
 
-  // Adresse IP locale pour affichage / connexion LAN
+  // Adresse IP locale (pour usage LAN)
   const [localIP, setLocalIP] = useState<string | null>(null);
 
-  // Indique si la partie est terminée (via isGameOver)
+  // Partie terminée ?
   const [gameOver, setGameOver] = useState<boolean>(false);
 
-  // Liste basique de winners
+  // Liste des gagnants si la partie est finie
   const [winners, setWinners] = useState<string[]>([]);
 
   /**
-   * useEffect : Initialise la connexion socket,
-   * écoute les événements clés ("roomUpdated", "gameStarted", "updateGameState").
+   * Liste de joueurs locaux => (playerId + nickname).
+   * On y insère :
+   * 1) Le premier joueur (créé depuis la lobby).
+   * 2) Les joueurs ajoutés manuellement.
+   */
+  const [localPlayers, setLocalPlayers] = useState<LocalPlayer[]>([]);
+
+  /**
+   * Joueur local "actif" pour Hit/Stand.
+   */
+  const [currentLocalPlayerId, setCurrentLocalPlayerId] = useState<string | null>(null);
+
+  /**
+   * Champ de saisie pour ajouter un nouveau joueur local.
+   */
+  const [newLocalNickname, setNewLocalNickname] = useState('');
+
+  /**
+   * Au montage :
+   * - Initialise le socket
+   * - Ajoute un listener "roomUpdated"
+   * - Ajoute un listener "gameStarted", "updateGameState"
+   * - Récupère l'IP locale
+   * - Ajoute le premier joueur (lobby) dans localPlayers
    */
   useEffect(() => {
     let socket: Awaited<ReturnType<typeof initializeSocket>>;
@@ -63,13 +95,12 @@ const GamePage: React.FC = () => {
         console.log('updateGameState:', payload.state);
         setBlackJackPlayers(payload.state);
 
-        // Si isGameOver existe sur n'importe quel player => gameOver
+        // Check si la partie est terminée
         const anyIsGameOver = payload.state.some((p) => p.isGameOver);
         setGameOver(anyIsGameOver);
 
-        // Exemple : si on veut afficher winners, on peut vérifier
+        // Si fin de partie, on détermine les winners
         if (anyIsGameOver) {
-          // on filtre ceux qui ne sont pas bust
           const winnersList = payload.state
             .filter((p) => !p.isBusted)
             .map((p) => p.nickname);
@@ -77,7 +108,11 @@ const GamePage: React.FC = () => {
         }
       });
 
+      // Récupérer l'IP locale
       fetchLocalIP();
+
+      // Ajouter le premier joueur (issu de la Lobby) à localPlayers
+      initLocalFirstPlayer();
     };
 
     setupSocket();
@@ -92,7 +127,30 @@ const GamePage: React.FC = () => {
   }, []);
 
   /**
-   * Récupère l'adresse IP locale pour l'afficher.
+   * Récupère le playerId / nickname du localStorage
+   * et l'ajoute comme premier "localPlayer" si ce n'est pas déjà fait.
+   */
+  function initLocalFirstPlayer() {
+    const storedId = localStorage.getItem('playerId');
+    const storedNick = localStorage.getItem('playerNickname');
+
+    if (storedId && storedNick) {
+      const alreadyExist = localPlayers.some((lp) => lp.playerId === storedId);
+      if (!alreadyExist) {
+        const lp: LocalPlayer = {
+          nickname: storedNick,
+          playerId: storedId,
+        };
+        setLocalPlayers((prev) => [...prev, lp]);
+
+        // On définit ce joueur comme actif par défaut
+        setCurrentLocalPlayerId(storedId);
+      }
+    }
+  }
+
+  /**
+   * Récupère l'adresse IP locale pour affichage (usage LAN).
    */
   const fetchLocalIP = async () => {
     try {
@@ -109,7 +167,7 @@ const GamePage: React.FC = () => {
   };
 
   /**
-   * Démarre la partie : envoie 'startGame' via Socket.IO.
+   * Lance la partie (startGame).
    */
   const handleStartGame = async () => {
     if (!roomId) return;
@@ -122,23 +180,20 @@ const GamePage: React.FC = () => {
   };
 
   /**
-   * Actions de jeu : Tirer (Hit) ou Rester (Stand).
-   * Désactive si gameOver = true.
+   * Actions de jeu : "Tirer (Hit)" ou "Rester (Stand)"
    */
   const handlePlayerAction = async (action: 'hit' | 'stand') => {
-    if (!roomId || gameOver) return; // si la partie est finie, ne plus rien faire
+    if (!roomId || gameOver) return;
 
-    // Récupérer le vrai playerId
-    const playerId = localStorage.getItem('playerId');
-    if (!playerId) {
-      console.error('Aucun playerId trouvé dans localStorage. Vérifiez la création ou la jonction de partie.');
+    if (!currentLocalPlayerId) {
+      console.error('Aucun joueur local sélectionné !');
       return;
     }
 
     const socket = await initializeSocket();
     socket.emit(
       action === 'hit' ? 'playerHit' : 'playerStand',
-      { roomId, playerId },
+      { roomId, playerId: currentLocalPlayerId },
       (response: { success: boolean; error?: string }) => {
         if (!response.success) {
           console.error(response.error);
@@ -148,13 +203,62 @@ const GamePage: React.FC = () => {
   };
 
   /**
-   * Retour visuel principal
+   * Ajoute un "nouveau joueur local" (même machine, même front).
+   * Appelle joinGame => le serveur renvoie un nouveau playerId.
    */
+  const handleAddLocalPlayer = async () => {
+    if (!roomId) return;
+    if (!newLocalNickname.trim()) return;
+
+    const socket = await initializeSocket();
+    socket.emit(
+      'joinGame',
+      { nickname: newLocalNickname, roomId },
+      (response: { success: boolean; error?: string; playerId?: string }) => {
+        if (!response.success || !response.playerId) {
+          console.error(response.error);
+          return;
+        }
+
+        const localPlayer: LocalPlayer = {
+          nickname: newLocalNickname,
+          playerId: response.playerId,
+        };
+        setLocalPlayers((prev) => [...prev, localPlayer]);
+
+        // Reset de l'input
+        setNewLocalNickname('');
+
+        // On sélectionne ce nouveau joueur local comme actif
+        setCurrentLocalPlayerId(response.playerId);
+      }
+    );
+  };
+
+  /**
+   * Affiche le symbole de la couleur (suit).
+   */
+  function renderSuitSymbol(suit: string): string {
+    switch (suit) {
+      case 'HEARTS':
+        return '♥';
+      case 'DIAMONDS':
+        return '♦';
+      case 'CLUBS':
+        return '♣';
+      case 'SPADES':
+        return '♠';
+      default:
+        return '';
+    }
+  }
+
   return (
-    <div className="game-container">
+    // Ajout de "blackjack-background" pour un rendu plus immersif
+    <div className="game-container blackjack-background">
       <h1>BlackJack - Room {roomId}</h1>
 
-      {/* Section avant le lancement */}
+      {/* SECTION AVANT LE LANCEMENT */}
       {!gameStarted && (
         <div className="pre-game">
           <h2>Waiting to start...</h2>
@@ -163,18 +267,46 @@ const GamePage: React.FC = () => {
               <li key={player.id}>{player.nickname}</li>
             ))}
           </ul>
+
           <button className="btn-primary" onClick={handleStartGame}>
             Start Game
           </button>
+
           {localIP && (
             <p className="local-ip-info">
               LAN Access: <strong>{localIP}:3000</strong>
             </p>
           )}
+
+          {/* AJOUT / AFFICHAGE DES JOUEURS LOCAUX */}
+          <div className="add-local-player-section">
+            <h3>Ajouter un joueur local</h3>
+            <input
+              type="text"
+              placeholder="Pseudo local"
+              value={newLocalNickname}
+              onChange={(e) => setNewLocalNickname(e.target.value)}
+              className="form-input"
+            />
+            <button onClick={handleAddLocalPlayer} className="btn-secondary" style={{ marginLeft: '10px' }}>
+              Ajouter
+            </button>
+
+            <div style={{ marginTop: '10px', textAlign: 'left' }}>
+              {localPlayers.length > 0 && <p>Joueurs locaux ajoutés :</p>}
+              <ul>
+                {localPlayers.map((lp) => (
+                  <li key={lp.playerId}>
+                    {lp.nickname} (ID: {lp.playerId})
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Section en cours de jeu */}
+      {/* SECTION EN COURS DE PARTIE */}
       {gameStarted && !gameOver && (
         <div className="game-board">
           {blackJackPlayers.map((player) => (
@@ -212,7 +344,7 @@ const GamePage: React.FC = () => {
         </div>
       )}
 
-      {/* Section Game Over */}
+      {/* SECTION GAME OVER */}
       {gameStarted && gameOver && (
         <div className="game-over-section">
           <h2>Game Over</h2>
@@ -248,9 +380,27 @@ const GamePage: React.FC = () => {
         </div>
       )}
 
-      {/* Section pour les boutons d'action si la partie est lancée et non terminée */}
+      {/* SECTION POUR LES ACTIONS HIT/STAND, si la partie est en cours */}
       {gameStarted && !gameOver && (
         <div className="player-actions">
+          <div style={{ marginBottom: '10px' }}>
+            <label style={{ marginRight: '8px', fontWeight: 'bold' }}>
+              Joueur local actif :
+            </label>
+            <select
+              value={currentLocalPlayerId || ''}
+              onChange={(e) => setCurrentLocalPlayerId(e.target.value)}
+              className="form-select"
+            >
+              <option value="">-- Sélectionner --</option>
+              {localPlayers.map((lp) => (
+                <option key={lp.playerId} value={lp.playerId}>
+                  {lp.nickname}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <button className="btn-action" onClick={() => handlePlayerAction('hit')}>
             Tirer (Hit)
           </button>
@@ -262,23 +412,5 @@ const GamePage: React.FC = () => {
     </div>
   );
 };
-
-/**
- * Fonction utilitaire pour afficher le symbole de la couleur (suit).
- */
-function renderSuitSymbol(suit: string): string {
-  switch (suit) {
-    case 'HEARTS':
-      return '♥';
-    case 'DIAMONDS':
-      return '♦';
-    case 'CLUBS':
-      return '♣';
-    case 'SPADES':
-      return '♠';
-    default:
-      return '';
-  }
-}
 
 export default GamePage;

@@ -61,7 +61,6 @@ class GameRoomManager {
     return this.rooms.get(roomId);
   }
 
-
   /**
    * Retourne la liste de toutes les rooms actives (IDs).
    */

@@ -35,27 +35,11 @@ export class BlackJackGame {
       this.players.push(bjPlayer);
     }
 
-    this.deck.shuffle();
-
-    // Place la mise basique (exemple)
-    this.placeBets();
-
-    this.players.forEach((bjPlayer) => {
-      bjPlayer.clearHand();
-      const card1 = this.deck.drawCard();
-      const card2 = this.deck.drawCard();
-      if (card1) bjPlayer.addCard(card1);
-      if (card2) bjPlayer.addCard(card2);
-    });
-
-    this.currentPlayerIndex = 0;
-    this.isGameOver = false;
-
-    this.checkBustAndAdvance();
+    this.startNextRound();
   }
 
   /**
-   * A amméliorer => pour l'instant : mise fixe de 10, si un joueur n'a pas assez, il mise tout
+   * A améliorer => pour l'instant : mise fixe de 10, si un joueur n'a pas assez, il mise tout
    */
   private placeBets(): void {
     const betAmount = 10;
@@ -203,8 +187,7 @@ export class BlackJackGame {
     for (const w of winners) {
       w.chips += share;
     }
-
-    // Voir quoi faire si il reste un reliquat 
+    // Voir quoi faire si il reste un reliquat
   }
 
   public isGameFinished(): boolean {
@@ -223,21 +206,21 @@ export class BlackJackGame {
 
     // Réinitialiser l'état temporaire des joueurs (sans toucher aux jetons)
     for (const player of this.players) {
-        player.clearHand();
+      player.clearHand();
     }
 
     // Distribuer deux nouvelles cartes à chaque joueur
     this.players.forEach((bjPlayer) => {
-        const card1 = this.deck.drawCard();
-        const card2 = this.deck.drawCard();
-        if (card1) bjPlayer.addCard(card1);
-        if (card2) bjPlayer.addCard(card2);
+      const card1 = this.deck.drawCard();
+      const card2 = this.deck.drawCard();
+      if (card1) bjPlayer.addCard(card1);
+      if (card2) bjPlayer.addCard(card2);
     });
 
     // Placer les mises pour la nouvelle manche
     this.placeBets();
 
     console.log(`[BlackJackGame] Nouvelle manche démarrée.`);
-}
+  }
 
 }
