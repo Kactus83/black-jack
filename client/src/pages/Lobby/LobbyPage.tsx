@@ -1,29 +1,33 @@
 import React, { useState } from 'react';
-import initializeSocket from '../../services/socket';
 import { useNavigate } from 'react-router-dom';
+import initializeSocket from '../../services/socket';
 import './LobbyPage.css';
 
 /**
- * LobbyPage : Permet de créer ou rejoindre une partie,
- * et d'afficher la liste des parties actives.
+ * LobbyPage : 
+ * - Crée ou rejoint une partie (room)
+ * - Affiche la liste des parties actives
  */
-const LobbyPage: React.FC = (): React.ReactElement => {
+const LobbyPage: React.FC = () => {
   const navigate = useNavigate();
   const [nickname, setNickname] = useState('');
   const [roomId, setRoomId] = useState('');
 
-  // >>> Ajout : state pour stocker la liste des parties actives
-  const [activeGames, setActiveGames] = useState<Array<{
+  // Liste des rooms actives (chacune contient roomId + playersCount).
+  // NOTE: Dans le nouveau backend, la structure renvoyée par "fetchRooms" 
+  // est {roomId, playersCount}. Si tu souhaites aussi la liste des joueurs,
+  // il faudra adapter le backend pour renvoyer players[].
+  const [activeRooms, setActiveRooms] = useState<Array<{
     roomId: string;
     playersCount: number;
-    players: { id: string; nickname: string }[];
+    // players?: { id: string; nickname: string }[]; // si besoin plus tard
   }> | null>(null);
 
   /**
-   * Crée une nouvelle partie avec un pseudo.
-   * Stocke le playerId et aussi le nickname dans localStorage.
+   * Crée une nouvelle room (socket.emit('createRoom', ...)).
+   * Stocke le playerId et nickname dans localStorage, puis navigue vers /game/:roomId
    */
-  const handleCreateGame = async () => {
+  const handleCreateRoom = async () => {
     if (!nickname.trim()) return;
 
     const socket = await initializeSocket();
@@ -32,7 +36,7 @@ const LobbyPage: React.FC = (): React.ReactElement => {
     }
 
     socket.emit(
-      'createGame',
+      'createRoom',
       { nickname },
       (
         response: {
@@ -47,6 +51,7 @@ const LobbyPage: React.FC = (): React.ReactElement => {
           localStorage.setItem('playerId', response.playerId);
           localStorage.setItem('playerNickname', nickname);
 
+          // Redirige vers la page de la room
           navigate(`/game/${response.roomId}`);
         } else {
           console.error(response.error);
@@ -56,10 +61,10 @@ const LobbyPage: React.FC = (): React.ReactElement => {
   };
 
   /**
-   * Rejoint une partie existante via un Room ID.
-   * Stocke aussi le nickname et le playerId dans localStorage.
+   * Rejoint une room existante (socket.emit('joinRoom', ...)).
+   * Stocke également le nickname et playerId en localStorage.
    */
-  const handleJoinGame = async () => {
+  const handleJoinRoom = async () => {
     if (!nickname.trim() || !roomId.trim()) return;
 
     const socket = await initializeSocket();
@@ -68,7 +73,7 @@ const LobbyPage: React.FC = (): React.ReactElement => {
     }
 
     socket.emit(
-      'joinGame',
+      'joinRoom',
       { nickname, roomId },
       (
         response: {
@@ -90,43 +95,42 @@ const LobbyPage: React.FC = (): React.ReactElement => {
   };
 
   /**
-   * Récupère la liste des parties actives via Socket.IO.
+   * Récupère la liste des rooms actives via Socket.IO (fetchRooms).
    */
-  const handleFetchActiveGames = async () => {
+  const handleFetchRooms = async () => {
     try {
       const socket = await initializeSocket();
       if (!socket.connected) {
         socket.connect();
       }
 
-      socket.emit('fetchActiveGames', (response: {
+      socket.emit('fetchRooms', (response: {
         success: boolean;
         error?: string;
         rooms?: Array<{
           roomId: string;
           playersCount: number;
-          players: { id: string; nickname: string }[];
         }>
       }) => {
         if (!response.success) {
-          console.error('[Lobby] Erreur fetchActiveGames :', response.error);
+          console.error('[Lobby] Erreur fetchRooms :', response.error);
           return;
         }
         if (response.rooms) {
-          setActiveGames(response.rooms);
+          setActiveRooms(response.rooms);
         }
       });
     } catch (error) {
-      console.error('[Lobby] Erreur lors de la récupération des parties actives :', error);
+      console.error('[Lobby] Erreur lors de la récupération des rooms actives :', error);
     }
   };
 
   /**
-   * Permet de rejoindre directement une partie depuis la liste
+   * Permet de rejoindre directement une room depuis la liste
    */
   const handleJoinFromList = async (selectedRoomId: string) => {
     setRoomId(selectedRoomId);
-    await handleJoinGame();
+    await handleJoinRoom();
   };
 
   return (
@@ -143,7 +147,7 @@ const LobbyPage: React.FC = (): React.ReactElement => {
           onChange={(e) => setNickname(e.target.value)}
           className="lobby-input"
         />
-        <button onClick={handleCreateGame} className="btn-primary">
+        <button onClick={handleCreateRoom} className="btn-primary">
           Créer une partie
         </button>
       </div>
@@ -168,7 +172,7 @@ const LobbyPage: React.FC = (): React.ReactElement => {
           onChange={(e) => setRoomId(e.target.value)}
           className="lobby-input"
         />
-        <button onClick={handleJoinGame} className="btn-secondary">
+        <button onClick={handleJoinRoom} className="btn-secondary">
           Rejoindre une partie
         </button>
       </div>
@@ -176,16 +180,16 @@ const LobbyPage: React.FC = (): React.ReactElement => {
       {/* Bouton pour afficher la liste des parties actives */}
       <div className="lobby-section" style={{ marginTop: '20px' }}>
         <h2>Liste des parties actives</h2>
-        <button onClick={handleFetchActiveGames} className="btn-secondary">
+        <button onClick={handleFetchRooms} className="btn-secondary">
           Afficher les parties
         </button>
 
-        {/* Si on a chargé activeGames, on les liste */}
-        {activeGames && (
+        {/* Si on a chargé activeRooms, on les liste */}
+        {activeRooms && (
           <div style={{ marginTop: '10px' }}>
-            {activeGames.length === 0 && <p>Aucune partie active pour le moment.</p>}
+            {activeRooms.length === 0 && <p>Aucune partie active pour le moment.</p>}
 
-            {activeGames.map((game) => (
+            {activeRooms.map((game) => (
               <div
                 key={game.roomId}
                 style={{
@@ -203,11 +207,10 @@ const LobbyPage: React.FC = (): React.ReactElement => {
                 <p>
                   <strong>Joueurs connectés :</strong> {game.playersCount}
                 </p>
-                <ul style={{ marginLeft: '20px' }}>
-                  {game.players.map((p) => (
-                    <li key={p.id}>{p.nickname}</li>
-                  ))}
-                </ul>
+                {/* 
+                  NOTE: Si on veut voir la liste des joueurs,
+                  il faudra que le backend renvoie "players".
+                */}
                 <button
                   className="btn-secondary"
                   onClick={() => handleJoinFromList(game.roomId)}
